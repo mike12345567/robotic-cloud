@@ -1,0 +1,112 @@
+<html>
+    <head>
+        <script src="public/js/jquery.min.js"></script>
+        <script src="public/js/bootstrap.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="public/css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="public/css/index.css">
+        <script src="https://cdn.jsdelivr.net/sparkjs/1.0.0/spark.min.js"></script>
+        <script src="public/js/b64.js"></script>
+        <script src="public/js/index.js"></script>
+        <title>Robot Controls</title>
+    </head>
+    <body>
+    <div class="wrapper">
+        <div class="panel panel-default main-form">
+            <div class="panel-heading">
+                <h3>Control Buttons</h3>
+            </div>
+            <div class="panel-body">
+                <div id="left-div" class="col-md-4">
+                    <h4>Movement</h4>
+                    <div id="movement-div">
+                        <button type="button" class="btn btn-success" id="forward-btn">Forward</button><br>
+                        <button type="button" class="btn btn-success" id="backward-btn">Backward</button><br>
+                        <button type="button" class="btn btn-success" id="left-turn-btn">Left Turn</button><br>
+                        <button type="button" class="btn btn-success" id="right-turn-btn">Right Turn</button><br>
+                         
+                        <h4 id="controls-h">Controls</h4>
+                        <button type="button" class="btn btn-info" id="send-speed-btn">Send Speed</button><br>
+                        <button type="button" class="btn btn-info" id="cal-friction-btn">Send Friction</button><br>
+                        <button type="button" class="btn btn-info" id="cal-turning-btn">Calibrate Turning</button><br>
+                        <button type="button" class="btn btn-info" id="cal-wheels-btn">Calibrate Wheels</button><br>
+                        <button type="button" class="btn btn-danger" id="stop-btn">Stop</button><br>
+                    </div>
+                </div>
+                <div id="right-div" class="col-md-4">
+                    <h4>Values</h4>
+                    <div class="text-input-area">
+                        <span>Distance:</span>
+                        <input type="text" class="form-control" id="distance-input">
+                    </div>
+                    
+                    <div class="text-input-area">
+                        <span>Speed:</span>
+                        <input type="text" class="form-control" id="speed-input">
+                    </div>
+                    
+                    <div class="text-input-area">
+                        <span>Rotation:</span>
+                        <input type="text" class="form-control" id="rotation-input">
+                    </div>
+                    
+                    <div class="text-input-area">
+                        <span>Friction:</span>
+                        <input type="text" class="form-control" id="friction-input">
+                    </div>
+                    
+                    <div class="text-input-area">
+                        <span>Dist (Front):</span>
+                        <input type="text" class="form-control" id="dist-front-output">
+                    </div>
+                    
+                    <div class="text-input-area">
+                        <span>Units (dist):</span>
+                        <select type="text" class="form-control" id="unit-input">
+                            <option>none</option>
+                            <option>mm</option>
+                            <option>cm</option>
+                            <option>m</option>
+                        </select>
+                    </div>
+                    
+                    <h4>Joystick</h4>
+                    <div id="joystick-div">
+                        <button type="button" class="btn btn-primary" id="joy-fwd-btn">&#8593;</button><br>
+                        <button type="button" class="btn btn-primary" id="joy-left-btn">&#8592;</button>
+                        <button type="button" class="btn btn-primary" id="joy-right-btn">&#8594;</button><br>
+                        <button type="button" class="btn btn-primary" id="joy-back-btn">&#8595;</button><br>
+                    </div>
+                </div>
+                
+                <div id="right-div" class="col-md-4">
+                    <h4>Calibration</h4>
+                    
+                    <div class="text-input-area">
+                        <span>Turning (ms):</span>
+                        <input type="text" class="form-control" id="turning-cal-input">
+                        <p><i>Note: The above calibrates the time that will be required to rotate a full circle at a speed of 170
+                        given the current surface.</i></p>
+                    </div>
+                    
+                     <div class="text-input-area">
+                        <span>Left Wheel: </span>
+                         <input type="text" class="form-control" id="left-wheel-input">
+                    </div>
+                    
+                     <div class="text-input-area">
+                        <span>Right Wheel: </span>
+                         <input type="text" class="form-control" id="right-wheel-input">
+                         <p><i>Note: The above options calibrate how much extra speed should be applied to a wheel to keep the robot 
+                         running straight.</i></p>
+                    </div>
+                    
+                    <div class="text-output-area">
+                      <label for="event-area">Events:</label>
+                      <textarea class="form-control" rows="10" id="event-area"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </body>
+</html>
