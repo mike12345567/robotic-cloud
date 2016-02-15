@@ -33,6 +33,10 @@ module.exports = {
         console.log(today + string);
     },
 
+    particleGet: function particleGet(url, options) {
+
+    },
+
     particlePost: function particlePost(deviceID, cmd) {
         var dataString = cmd;
 

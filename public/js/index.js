@@ -135,6 +135,18 @@ $(document).ready(function() {
             waitForLift = false;
         }
     });
+
+    $.get("http://localhost:3000/devices", function( data ) {
+        for (var i = 0; i < data.length; i++) {
+            $("#robotDropDownList").append("<li class=\"element\"><a href=\"#\">" + data[i].deviceName + "</a></li>");
+        }
+        $(".dropdown-menu li a").click(function(){
+
+            $(".btn:first-child").text($(this).text());
+            $(".btn:first-child").val($(this).text());
+
+        });
+    });
 });
 
 function outputEvent(eventName) {
@@ -198,7 +210,7 @@ function particleCall(cmd, parameters) {
     }
     $.post("https://api.particle.io/v1/devices/"+deviceID+"/"+funcName, {arg: data, access_token: accessToken})
         .done(function(data) {
-            
+
         });
 }
 

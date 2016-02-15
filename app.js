@@ -40,55 +40,62 @@ CalibrationEnum = {
  ********************/
 
 spark.login({accessToken: utils.accessToken});
-// TODO: update this to take the device which we are getting data from
-spark.getDevice(deviceID).then(function(device) {
-    device.onEvent(EventEnum.COMPLETE, function(data) {
-        storeEvent(EventEnum.COMPLETE);
-    });
 
-    device.onEvent(EventEnum.STOPPED, function(data) {
-        storeEvent(EventEnum.STOPPED);
-    });
+var deviceList = spark.listDevices();
 
-    device.onEvent(EventEnum.CALIBRATION_VALUES, function(data) {
-        var array = base64js.toByteArray(data.data);
-        storeCalibration(array);
-    });
+deviceList.then(function(devices) {
+    for (var i = 0; i < devices.length; i++) {
+        var device = devices[i];
+        var name = device.attributes.name;
+        device.onEvent(EventEnum.COMPLETE, function(data) {
+            storeEvent(name, EventEnum.COMPLETE);
+        });
 
-    device.onEvent(EventEnum.ULTRASONIC_VALUES, function(data) {
-        var array = base64js.toByteArray(data.data);
-        storeDistances(array);
-    });
+        device.onEvent(EventEnum.STOPPED, function(data) {
+            storeEvent(name, EventEnum.STOPPED);
+        });
+
+        device.onEvent(EventEnum.CALIBRATION_VALUES, function(data) {
+            var array = base64js.toByteArray(data.data);
+            storeCalibration(name, array);
+        });
+
+        device.onEvent(EventEnum.ULTRASONIC_VALUES, function(data) {
+            var array = base64js.toByteArray(data.data);
+            storeDistances(name, array);
+        });
+    }
+    module.exports = {deviceArray : devices};
 });
 
-function storeEvent(eventName) {
+function storeEvent(deviceName, eventName) {
     var date = new Date();
     var time = date.getTime();
 
-    addToMap(eventMap, eventName, eventName + " event at:" + time.toString());
+    addToMap(deviceName, eventMap, eventName, eventName + " event at:" + time.toString());
 }
 
-function storeCalibration(array) {
+function storeCalibration(deviceName, array) {
     var i = 0;
 
-    addToMap(calibrationMap, CalibrationEnum.SPEED, array[i++] | (array[i++] << 8));
-    addToMap(calibrationMap, CalibrationEnum.CAL_RIGHT_WHEEL, array[i++] | (array[i++] << 8));
-    addToMap(calibrationMap, CalibrationEnum.CAL_LEFT_WHEEL, array[i++] | (array[i++] << 8));
-    addToMap(calibrationMap, CalibrationEnum.CAL_TURNING, array[i++] | (array[i++] << 8));
-    addToMap(calibrationMap, CalibrationEnum.CAL_FRICTION, array[i++] | (array[i++] << 8));
+    addToMap(deviceName, calibrationMap, CalibrationEnum.SPEED, array[i++] | (array[i++] << 8));
+    addToMap(deviceName, calibrationMap, CalibrationEnum.CAL_RIGHT_WHEEL, array[i++] | (array[i++] << 8));
+    addToMap(deviceName, calibrationMap, CalibrationEnum.CAL_LEFT_WHEEL, array[i++] | (array[i++] << 8));
+    addToMap(deviceName, calibrationMap, CalibrationEnum.CAL_TURNING, array[i++] | (array[i++] << 8));
+    addToMap(deviceName, calibrationMap, CalibrationEnum.CAL_FRICTION, array[i++] | (array[i++] << 8));
 }
 
-function storeDistances(array) {
+function storeDistances(deviceName, array) {
     var i = 0;
 
-    addToMap(distanceMap, UltrasonicPosEnum.US_POS_FRONT, array[i++] | (array[i++] << 8));
+    addToMap(deviceName, distanceMap, UltrasonicPosEnum.US_POS_FRONT, array[i++] | (array[i++] << 8));
 }
 
-function addToMap(map, key, value) {
-    if (map[deviceID] == null) {
-        map[deviceID] = new Array;
+function addToMap(deviceName, map, key, value) {
+    if (map[deviceName] == null) {
+        map[deviceName] = new Array;
     }
-    map[deviceID][key].push(value);
+    map[deviceName][key].push(value);
 }
 
 app.use(logger('dev'));
@@ -99,4 +106,4 @@ app.use(cookieParser());
 app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use('/', routes);
 
-module.exports = app;
+module.exports = {app: app};

@@ -3,6 +3,10 @@
   margin-top: 30px;
 }
 
+.element {
+  text-align: center;
+}
+
 body {
   background: rgb(201, 201, 201) !important;
 }
