@@ -1,5 +1,5 @@
 var deviceID = "300032001147343339383037";
-var accessToken = "da837cbd013221af2cac61eea03e15d8459c49ea";
+var accessToken = "d451f895e6d72efc774b82b6de71bed6ba43522c";
 var funcName = "makeMove";
 var rotationUnit = "degrees";
 var noSelected = "none";
@@ -9,8 +9,8 @@ EventEnum = {
     COMPLETE : "complete",
     CALIBRATION_VALUES : "calibrationValues",
     ULTRASONIC_VALUES: "distanceCm",
-    STOPPED : "stopped",
-}
+    STOPPED : "stopped"
+};
 
 ButtonEnum = {
     FORWARD : {cmd: "forward", btnName: "forward-btn"},
@@ -21,15 +21,16 @@ ButtonEnum = {
     SEND_SPEED : {cmd: "setSpeed", btnName: "send-speed-btn"},
     CAL_TURNING : {cmd: "calibrateTurning", btnName: "cal-turning-btn"},
     CAL_WHEELS : {cmd: "calibrateSpeed", btnName: "cal-wheels-btn"},
-    CAL_FRICTION : {cmd: "calibrateFriction", btnName: "cal-friction-btn"}
-}
+    CAL_FRICTION : {cmd: "calibrateFriction", btnName: "cal-friction-btn"},
+    RESET_FAIL : {cmd: "resetFailed", btnName: "cal-reset-fail-btn"}
+};
 
 JoystickEnum = {
     JOY_FWD : { cmd: "forward", btnName: "joy-fwd-btn"},
     JOY_LEFT : { cmd: "turnLeft", btnName: "joy-left-btn"},
     JOY_RIGHT : { cmd: "turnRight", btnName: "joy-right-btn"},
-    JOY_BACK : { cmd: "backward", btnName: "joy-back-btn"},
-}
+    JOY_BACK : { cmd: "backward", btnName: "joy-back-btn"}
+};
 
 InputEnum = {
     DISTANCE : "distance-input",
@@ -41,8 +42,9 @@ InputEnum = {
     CAL_TURNING : "turning-cal-input",
     CAL_FRICTION : "friction-input",
     DIST_FRONT : "dist-front-output",
-    EVENTS : "event-area",
-}
+    GYRO_READ : "gyro-read-output",
+    EVENTS : "event-area"
+};
 
 $(document).ready(function() {
     spark.login({accessToken: accessToken});
