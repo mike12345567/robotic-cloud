@@ -3,10 +3,6 @@
   margin-top: 30px;
 }
 
-.element {
-  text-align: center;
-}
-
 body {
   background: rgb(201, 201, 201) !important;
 }
@@ -31,7 +27,6 @@ h4 {
 }
 
 #right-div {
-  width: 33%;
 }
 
 #right-div span {
@@ -50,19 +45,17 @@ h4 {
 }
 
 #left-div {
-    text-align: center;
-    width: 33%;
+  text-align: center;
 }
 
 .btn {
-   width: 300px;
+  width: 300px;
   margin: 5 0px;
   padding: 10px;
 }
 
 #joystick-div {
   text-align: center;
-  margin-left: 40px;
 }
 
 #joystick-div button {
@@ -71,59 +64,9 @@ h4 {
 
 .text-output-area {
   margin-top: 20px;
-  width: 400px;
+  width: 370px;
   clear: both;
   margin-bottom: 25px;
-}
-
-@media only screen 
-and (min-device-width : 1000px)  {
-  .text-input-area {
-    margin-left: 23%;
-  }
-  
-  .text-output-area {
-    margin-left: 14%;
-  }
-  
-  #right-div {
-    border-left: 1px dotted #ccc;
-    height: 700px;
-  }
-  
-  #right-div h4 {
-    margin-left: 45%;
-  }
-  
-  .main-form {
-    margin-left: 100px;
-    margin-right: 100px;
-    margin-top: 50px;
-  }
-}
-
-@media only screen 
-and (max-device-width : 1000px)  {
-.wrapper {
-width: 500px;
-}
-  h4 {
-    text-align: center;
-  }
-  
-  .main-form {
-    margin-left: 10px;
-    width: 400px;
-    margin-bottom: 30px;
-  }
-  
-  .panel-body {
-    width: 398px !important;
-  }
-  
-  .panel-heading {
-    width: 398px !important;
-  }
 }
 
 .text-input-area {
@@ -131,4 +74,55 @@ width: 500px;
   width: 300px;
   clear: both;
   margin-bottom: 25px;
+}
+
+
+@media only screen
+and (min-device-width : 1000px)  {
+  .text-input-area {
+    margin-left:  12%;
+  }
+
+  .text-output-area {
+    margin-left: 13px;
+  }
+
+  #right-div {
+    border-left: 1px dotted #ccc;
+    height: 700px;
+  }
+
+  #right-div h4 {
+    margin-left: 40%;
+  }
+
+  .main-form {
+    margin-left: 100px;
+    margin-right: 100px;
+    margin-top: 50px;
+  }
+}
+
+@media only screen
+and (max-device-width : 1000px)  {
+  .wrapper {
+    width: 500px;
+  }
+  h4 {
+    text-align: center;
+  }
+
+  .main-form {
+    margin-left: 10px;
+    width: 400px;
+    margin-bottom: 30px;
+  }
+
+  .panel-body {
+    width: 398px !important;
+  }
+
+  .panel-heading {
+    width: 398px !important;
+  }
 }

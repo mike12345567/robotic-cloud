@@ -10,35 +10,6 @@ var http = require('http');
  *******************/
 var Particle = require('particle-api-js');
 var particle = new Particle();
-var deviceList = particle.listDevices({auth: accessToken});
-deviceList.then(function(devices) {
-  for (var i = 0; i < devices.length; i++) {
-    var device = devices[i];
-    var name = device.attributes.name;
-    device.onEvent(EventEnum.COMPLETE, function(data) {
-      storage.storeEvent(name, EventEnum.COMPLETE);
-    });
-
-    device.onEvent(EventEnum.STOPPED, function(data) {
-      storage.storeEvent(name, EventEnum.STOPPED);
-    });
-
-    device.onEvent(EventEnum.CALIBRATION_VALUES, function(data) {
-      var temp = base64js.toByteArray(data.data);
-      storage.storeCalibration(name, temp);
-    });
-
-    device.onEvent(EventEnum.ULTRASONIC_VALUES, function(data) {
-      var temp = base64js.toByteArray(data.data);
-      storage.storeDistances(name, temp);
-    });
-  }
-  module.exports = {deviceArray : devices.body};
-  console.log("INIT COMPLETE");
-}, function(err){
-  console.log("FAILED TO GET DEVICES - " + err.description);
-  process.exit();
-});
 
 EventEnum = {
   COMPLETE : "complete",
@@ -50,7 +21,36 @@ EventEnum = {
 /********************
  *  PARTICLE EVENTS *
  ********************/
-
+var deviceList = particle.listDevices({auth: accessToken});
+deviceList.then(function(devices) {
+  for (var i = 0; i < devices.length; i++) {
+    var device = devices[i];
+    var name = device.name;
+    particle.getEventStream({deviceId: device.id, auth: accessToken}).then(function(data) {
+      switch (data.name) {
+        case EventEnum.COMPLETE:
+          storage.storeEvent(name, EventEnum.COMPLETE);
+          break;
+        case EventEnum.STOPPED:
+          storage.storeEvent(name, EventEnum.STOPPED);
+          break;
+        case EventEnum.CALIBRATION_VALUES:
+          var temp = base64js.toByteArray(data.data);
+          storage.storeCalibration(name, temp);
+          break;
+        case EventEnum.ULTRASONIC_VALUES:
+          var temp = base64js.toByteArray(data.data);
+          storage.storeDistances(name, temp);
+          break;
+      }
+    });
+  }
+  module.exports = {deviceArray : devices.body};
+  console.log("INIT COMPLETE");
+}, function(err){
+  console.log("FAILED TO GET DEVICES - " + err.description);
+  process.exit();
+});
 
 module.exports = {
   particleGet: function particleGet(url, options) {
