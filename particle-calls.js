@@ -23,33 +23,32 @@ EventEnum = {
  ********************/
 var deviceList = particle.listDevices({auth: accessToken});
 deviceList.then(function(devices) {
-  for (var i = 0; i < devices.length; i++) {
-    var device = devices[i];
-    var name = device.name;
-    particle.getEventStream({deviceId: device.id, auth: accessToken}).then(function(data) {
-      switch (data.name) {
-        case EventEnum.COMPLETE:
-          storage.storeEvent(name, EventEnum.COMPLETE);
-          break;
-        case EventEnum.STOPPED:
-          storage.storeEvent(name, EventEnum.STOPPED);
-          break;
-        case EventEnum.CALIBRATION_VALUES:
-          var temp = base64js.toByteArray(data.data);
-          storage.storeCalibration(name, temp);
-          break;
-        case EventEnum.ULTRASONIC_VALUES:
-          var temp = base64js.toByteArray(data.data);
-          storage.storeDistances(name, temp);
-          break;
-      }
-    });
-  }
-  module.exports = {deviceArray : devices.body};
+  var deviceArray = devices.body;
+  module.exports = {deviceArray : deviceArray};
   console.log("INIT COMPLETE");
 }, function(err){
   console.log("FAILED TO GET DEVICES - " + err.description);
   process.exit();
+});
+
+particle.getEventStream({deviceId: 'mine', auth: accessToken}).then(function(data) {
+  console.log("EVENT - " + data);
+  switch (data.name) {
+    case EventEnum.COMPLETE:
+      storage.storeEvent(name, EventEnum.COMPLETE);
+      break;
+    case EventEnum.STOPPED:
+      storage.storeEvent(name, EventEnum.STOPPED);
+      break;
+    case EventEnum.CALIBRATION_VALUES:
+      var temp = base64js.toByteArray(data.data);
+      storage.storeCalibration(name, temp);
+      break;
+    case EventEnum.ULTRASONIC_VALUES:
+      var temp = base64js.toByteArray(data.data);
+      storage.storeDistances(name, temp);
+      break;
+  }
 });
 
 module.exports = {

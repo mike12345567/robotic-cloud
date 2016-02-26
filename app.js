@@ -3,7 +3,7 @@ var path = require('path');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-var particle = require('./particle.js');
+var particle = require('./particle-calls.js');
 
 var routes = require('./routes/index');
 

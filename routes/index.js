@@ -3,7 +3,7 @@ var http = require('http');
 var router = express.Router();
 var utils = require('../utils.js');
 var serializer = require('../serializer.js');
-var particle = require('../particle.js');
+var particle = require('../particle-calls.js');
 var path = require('path');
 
 /* GET home page. */
