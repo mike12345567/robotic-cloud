@@ -27,8 +27,10 @@ router.get('/distances', function(req, res) {
 
   if (deviceName != undefined && deviceName != null) {
     serializer.startJson();
-    var distancesCm = storage.getAllLatestDistances(deviceName);
-    serializer.addJson(serializer.genKeyPairs("frontDistance", distancesCm));
+    var distancesCm = storage.getAllDistances(deviceName);
+    for (var key in distancesCm) {
+      serializer.addJsonBlock(serializer.genKeyPairs(key, distancesCm[key]));
+    }
     serializer.endJson(res);
   } else {
     errorState(res);
