@@ -8,6 +8,11 @@ function addToJsonObject(arg) {
   }
 }
 
+function addNoData() {
+  var temp = {status : "failed", reason : "NO DATA AVAILABLE"};
+  obj.push(temp);
+}
+
 module.exports = {
   startJson: function() {
     obj = [];
@@ -19,6 +24,10 @@ module.exports = {
       if (!arg instanceof Array) {
         addToJsonObject(arg);
       } else {
+        if (arg.length == 0) {
+          addNoData();
+          return;
+        }
         for (var i = 0; i < arg.length; i++) {
           addToJsonObject(arg[i]);
         }

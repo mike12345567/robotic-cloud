@@ -2,6 +2,7 @@ var express = require('express');
 var http = require('http');
 var router = express.Router();
 var utils = require('../utils.js');
+var storage = require('../storage.js');
 var serializer = require('../serializer.js');
 var particle = require('../particle-calls.js');
 var path = require('path');
@@ -20,11 +21,26 @@ router.get('/devices', function(req, res) {
   serializer.endJson(res);
 });
 
+router.get('/distances', function(req, res) {
+  utils.dateLog("GET access! /distances");
+  var deviceName = getDeviceName(req);
+
+  if (deviceName != undefined && deviceName != null) {
+    serializer.startJson();
+    var distancesCm = storage.getAllLatestDistances(deviceName);
+    serializer.addJson(serializer.genKeyPairs("frontDistance", distancesCm));
+    serializer.endJson(res);
+  } else {
+    errorState(res);
+  }
+});
+
 router.post('/move', function(req, res) {
   utils.dateLog("POST request! /move");
   var ID;
-  if ("deviceName" in req.body) {
-    ID = particle.getDeviceIDFromName(req.body.deviceName);
+  var deviceName = getDeviceName(req);
+  if (deviceName != undefined && deviceName != null) {
+    ID = particle.getDeviceIDFromName(deviceName);
   } else {
     errorState(res);
     return;
@@ -52,6 +68,14 @@ router.post('/rotate', function(req, res) {
 function errorState(res) {
   res.sendStatus(500);
   res.end();
+}
+
+function getDeviceName(req) {
+  if ("devicename" in req.headers) {
+    return req.headers.devicename.toLowerCase();
+  } else if ("deviceName" in req.body) {
+    return req.body.deviceName.toLowerCase();
+  }
 }
 
 module.exports = router;
