@@ -8,48 +8,69 @@ var http = require('http');
 /*******************
  *  INIT PARTICLE  *
  *******************/
-var Particle = require('particle-api-js');
-var particle = new Particle();
+var particle = require('spark');
 
 EventEnum = {
   COMPLETE : "complete",
   CALIBRATION_VALUES : "calibrationValues",
   ULTRASONIC_VALUES: "distanceCm",
-  STOPPED : "stopped"
+  STOPPED : "stopped",
+  GYRO_READING_VALUES : "gyroscopeReadings"
 };
 
 /********************
  *  PARTICLE EVENTS *
  ********************/
-var deviceList = particle.listDevices({auth: accessToken});
-deviceList.then(function(devices) {
-  var deviceArray = devices.body;
-  module.exports = {deviceArray : deviceArray};
-  console.log("INIT COMPLETE");
-}, function(err){
-  console.log("FAILED TO GET DEVICES - " + err.description);
-  process.exit();
+function openEventStream() {
+  var req = particle.getEventStream("", "mine", function (data) {
+    console.log("EVENT - " + data.name + " - " + data.published_at);
+    var name = module.exports.getDeviceNameFromID(data.coreid);
+    switch (data.name) {
+      case EventEnum.COMPLETE:
+        storage.storeEvent(name, EventEnum.COMPLETE);
+        break;
+      case EventEnum.STOPPED:
+        storage.storeEvent(name, EventEnum.STOPPED);
+        break;
+      case EventEnum.CALIBRATION_VALUES:
+        var temp = base64js.toByteArray(data.data);
+        storage.storeCalibration(name, temp);
+        break;
+      case EventEnum.ULTRASONIC_VALUES:
+        var temp = base64js.toByteArray(data.data);
+        storage.storeDistances(name, temp);
+        break;
+      case EventEnum.GYRO_READING_VALUES:
+        var temp = base64js.toByteArray(data.data);
+        storage.storeGyroReadings(name, temp);
+        break;
+      default:
+        console.log("EVENT UNHANDLED!");
+    }
+  });
+
+  req.on('end', function() {
+    console.log("ended!  re-opening in 3 seconds...");
+    setTimeout(openEventStream, 3 * 1000);
+  });
+}
+
+var promise = particle.login({accessToken:accessToken});
+promise.then(function() {
+  var devicesList = particle.listDevices();
+  devicesList.then(function (devices) {
+    var deviceArray = devices;
+    module.exports.deviceArray = deviceArray;
+    console.log("INIT COMPLETE");
+  }, function (err) {
+    console.log("FAILED TO GET DEVICES - " + err.description);
+    process.exit();
+  });
+
+  openEventStream();
 });
 
-particle.getEventStream({deviceId: 'mine', auth: accessToken}).then(function(data) {
-  console.log("EVENT - " + data);
-  switch (data.name) {
-    case EventEnum.COMPLETE:
-      storage.storeEvent(name, EventEnum.COMPLETE);
-      break;
-    case EventEnum.STOPPED:
-      storage.storeEvent(name, EventEnum.STOPPED);
-      break;
-    case EventEnum.CALIBRATION_VALUES:
-      var temp = base64js.toByteArray(data.data);
-      storage.storeCalibration(name, temp);
-      break;
-    case EventEnum.ULTRASONIC_VALUES:
-      var temp = base64js.toByteArray(data.data);
-      storage.storeDistances(name, temp);
-      break;
-  }
-});
+
 
 module.exports = {
   particleGet: function particleGet(url, options) {
@@ -85,8 +106,21 @@ module.exports = {
       return "";
     }
     for (var i = 0; i < deviceArray.length; i++) {
-      if (deviceArray[i].name == name) {
+      if (deviceArray[i].attributes.name == name) {
         return deviceArray[i].id;
+      }
+    }
+    return "";
+  },
+
+  getDeviceNameFromID: function getDeviceNameFromID(ID) {
+    var deviceArray = module.exports.deviceArray;
+    if (deviceArray == null) {
+      return "";
+    }
+    for (var i = 0; i < deviceArray.length; i++) {
+      if (deviceArray[i].id == ID) {
+        return deviceArray[i].attributes.name;
       }
     }
     return "";
@@ -96,7 +130,7 @@ module.exports = {
     var array = new Array;
     var deviceArray = module.exports.deviceArray;
     for (var i = 0; i < deviceArray.length; i++) {
-      array.push(deviceArray[i].name);
+      array.push(deviceArray[i].attributes.name);
     }
     return array;
   }
