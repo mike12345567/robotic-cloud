@@ -39,21 +39,13 @@ router.get('/distances', function(req, res) {
 
 router.post('/move', function(req, res) {
   utils.dateLog("POST request! /move");
-  var ID;
-  var deviceName = getDeviceName(req);
-  if (deviceName != undefined && deviceName != null) {
-    ID = particle.getDeviceIDFromName(deviceName);
-  } else {
-    errorState(res);
-    return;
-  }
+  var ID = getDeviceIDFromReq(req);
+  if (ID == null) return;
 
-  if ("direction" in req.body) {
-    var direction = req.body.direction.toLowerCase();
-    if ("distance" in req.body && "units" in req.body) {
-      var distance = req.body.distance;
-      var units = req.body.units;
-    }
+  var direction = utils.getTrueDirection(utils.getParameter("direction", req.body));
+  var distance = utils.getParameter("distance", req.body);
+  var units = utils.getParameter("units", req.body);
+  if (direction != null) {
     particle.particlePost(ID, direction, distance, units);
   } else {
     errorState(res);
@@ -65,11 +57,40 @@ router.post('/move', function(req, res) {
 
 router.post('/rotate', function(req, res) {
   utils.dateLog("POST request! /rotate");
+  var ID = getDeviceIDFromReq(req);
+  if (ID == null) return;
+
+  var direction = utils.getTrueDirection(utils.getParameter("direction", req.body));
+  var degrees = utils.getParameter("degrees", req.body);
+  var radians = utils.getParameter("radians", req.body);
+  if (radians != null) {
+    degrees = radians * (180/Math.PI);
+  }
+  if (direction != null) {
+    particle.particlePost(ID, direction, degrees);
+  } else {
+    errorState(res);
+    return;
+  }
+
+  res.sendStatus(200);
+  res.end();
 });
 
 function errorState(res) {
   res.sendStatus(500);
   res.end();
+}
+
+function getDeviceIDFromReq(req) {
+  var deviceName = getDeviceName(req);
+  if (deviceName != undefined && deviceName != null) {
+    return particle.getDeviceIDFromName(deviceName);
+  } else {
+    errorState(res);
+    return null;
+  }
+
 }
 
 function getDeviceName(req) {

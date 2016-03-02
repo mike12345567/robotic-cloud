@@ -1,4 +1,12 @@
 module.exports = {
+  MoveDirectionEnum: {
+    DIRECTION_TURN_LEFT:  "turnLeft",
+    DIRECTION_TURN_RIGHT: "turnRight",
+    DIRECTION_FORWARD:    "forward",
+    DIRECTION_BACKWARD:   "backward",
+    DIRECTION_STOP:       "stop"
+  },
+
   getDateStringFormat: function(date){
     var today = date;
     var dd = today.getDate();
@@ -32,5 +40,45 @@ module.exports = {
 
   getDateNow: function() {
     return this.getDateStringFormat(new Date());
+  },
+
+  getParameter: function(string, object) {
+    if (string in object) {
+      return object[string];
+    } else {
+      return null;
+    }
+  },
+
+  getTrueDirection: function(passedIn) {
+    if (passedIn == null || passedIn == undefined) {
+      return null;
+    }
+    passedIn = passedIn.toLowerCase();
+    switch (passedIn) {
+      case "turnright":
+      case "right":
+      case "rightturn":
+        return this.MoveDirectionEnum.DIRECTION_TURN_RIGHT;
+      case "turnleft":
+      case "left":
+      case "leftturn":
+        return this.MoveDirectionEnum.DIRECTION_TURN_LEFT;
+      case "forward":
+      case "moveforward":
+      case "forwardmove":
+        return this.MoveDirectionEnum.DIRECTION_FORWARD;
+      case "stop":
+      case "stopmove":
+      case "stopping":
+        return this.MoveDirectionEnum.DIRECTION_STOP;
+      case "backward":
+      case "backwards":
+      case "movebackward":
+      case "backwardmove":
+        return this.MoveDirectionEnum.DIRECTION_BACKWARD;
+      default:
+        return null;
+    }
   }
 };
