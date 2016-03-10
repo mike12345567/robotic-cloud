@@ -77,6 +77,20 @@ router.post('/rotate', function(req, res) {
   res.end();
 });
 
+router.post('/devices/locationData', function(req, res) {
+  utils.dateLog("POST Request! /device/locationData");
+  var robot = utils.getParameter("robot-one", req.body);
+  if (robot != null) {
+    var rotation = utils.getParameter("rotation", robot);
+    var location = utils.getParameter("location", robot);
+    if (rotation != null && location != null) {
+      console.log("rotation: %d location x: %d location y: %d", rotation, location.x, location.y);
+    }
+  }
+  res.sendStatus(200);
+  res.end();
+});
+
 function errorState(res) {
   res.sendStatus(500);
   res.end();

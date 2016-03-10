@@ -4,6 +4,7 @@ var funcName = "makeMove";
 var rotationUnit = "degrees";
 var noSelected = "none";
 var waitForLift = false;
+
 var maxGyroRead = 22000;
 var wasFail = false;
 
