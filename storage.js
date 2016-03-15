@@ -12,11 +12,13 @@ module.exports = {
   },
 
   CalibrationEnum: {
-    SPEED : "speed",
+    SPEED           : "speed",
     CAL_RIGHT_WHEEL : "rightWheel",
-    CAL_LEFT_WHEEL : "leftWheel",
-    CAL_TURNING : "turning",
-    CAL_FRICTION : "friction"
+    CAL_LEFT_WHEEL  : "leftWheel",
+    CAL_TURNING     : "turning",
+    CAL_FRICTION    : "friction",
+    CAL_DIR_LEFT    : "directionLeft",
+    CAL_DIR_RIGHT   : "directionRight"
   },
 
   GyroReadingsEnum: {
@@ -38,7 +40,7 @@ module.exports = {
     var i = 0;
 
     for (var property in this.CalibrationEnum) {
-      addToMap(deviceName, calibrationMap, this.CalibrationEnum[property], array[i++] | (array[i++] << 8));
+      overwriteToMap(deviceName, calibrationMap, this.CalibrationEnum[property], array[i++] | (array[i++] << 8));
     }
   },
 
@@ -73,6 +75,14 @@ module.exports = {
 
   getDistancesByKey: function (deviceName, key) {
     return getAllKeyDataFromMap(deviceName, key, map);
+  },
+
+  getAllEvents: function (deviceName) {
+    return getAllDataFromMap(deviceName, eventMap);
+  },
+
+  getAllCalibration: function (deviceName) {
+    return getAllDataFromMap(deviceName, calibrationMap);
   }
 };
 
@@ -83,7 +93,7 @@ function getAllDataFromMap(deviceName, map) {
   for (var key in map[deviceName]) {
     initArray(array, key);
     for (var j = 0; j < map[deviceName][key].length; j++) {
-      array[key][idx++] = map[deviceName][key][j];
+      array[key][j] = map[deviceName][key][j];
     }
   }
   return array;
@@ -109,5 +119,14 @@ function addToMap(deviceName, map, key, value) {
   initArray(map[deviceName], key);
 
   var obj = {"value" : value, "timestamp" : util.getDateNow()};
+  map[deviceName][key].push(obj);
+}
+
+function overwriteToMap(deviceName, map, key, value) {
+  initArray(map, deviceName);
+  initArray(map[deviceName], key);
+
+  var obj = {"value" : value};
+  map[deviceName][key] = [];
   map[deviceName][key].push(obj);
 }

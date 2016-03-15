@@ -18,9 +18,13 @@ function addToJsonObject(arg) {
 function addJsonBlock(key, block) {
   var temp = {};
   temp.type = key;
-  temp.values = [];
-  for (var i = 0; i < block.length; i++) {
-    temp.values.push(block[i]);
+  temp.attributes = [];
+  if (block.length > 1) {
+    for (var i = 0; i < block.length; i++) {
+      temp.attributes.push(block[i]);
+    }
+  } else {
+    temp.attributes.push(block[0]);
   }
   obj.push(temp);
 }
@@ -53,8 +57,7 @@ module.exports = {
   },
 
   addJsonBlock: function(block) {
-    if (!block instanceof Array || !"attributes" in block ||
-        !"type" in block) {
+    if (!block instanceof Array || !"type" in block) {
       return;
     }
     var tempArray = [];
@@ -66,7 +69,11 @@ module.exports = {
       } else if (finalType != block[idx].type) {
         return;
       }
-      tempArray.push(block[idx].attributes);
+      if (block[idx].attributes != null) {
+        tempArray.push(block[idx].attributes);
+      } else {
+        tempArray.push(block[idx]);
+      }
     }
     addJsonBlock(finalType, tempArray);
   },
@@ -82,7 +89,7 @@ module.exports = {
     if (value instanceof Object && "value" in value && "timestamp" in value) {
       var pair = {"type" : key, "attributes" : {"value" : value.value, "timestamp" : value.timestamp}};
     } else {
-      var pair = {"type": key, "value": value};
+      var pair = {"type": key, "attributes" : {"value": value.value}};
     }
     return pair;
   },

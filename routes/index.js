@@ -22,20 +22,32 @@ router.get('/devices', function(req, res) {
 });
 
 router.get('/distances', function(req, res) {
-  utils.dateLog("GET access! /distances");
+  getAllSpecificData("distances", req, res, "getAllDistances");
+});
+
+router.get('/events', function(req, res) {
+  getAllSpecificData("events", req, res, "getAllEvents");
+});
+
+router.get('/calibrationValues', function(req, res) {
+  getAllSpecificData("calibrationValues", req, res, "getAllCalibration");
+});
+
+function getAllSpecificData(name, req, res, storageName) {
+  utils.dateLog("GET access! /" + name);
   var deviceName = getDeviceName(req);
 
   if (deviceName != undefined && deviceName != null) {
     serializer.startJson();
-    var distancesCm = storage.getAllDistances(deviceName);
-    for (var key in distancesCm) {
-      serializer.addJsonBlock(serializer.genKeyPairs(key, distancesCm[key]));
+    var events = storage[storageName](deviceName);
+    for (var key in events) {
+      serializer.addJsonBlock(serializer.genKeyPairs(key, events[key]));
     }
     serializer.endJson(res);
   } else {
     errorState(res);
   }
-});
+}
 
 router.post('/move', function(req, res) {
   utils.dateLog("POST request! /move");
@@ -58,7 +70,10 @@ router.post('/move', function(req, res) {
 router.post('/rotate', function(req, res) {
   utils.dateLog("POST request! /rotate");
   var ID = getDeviceIDFromReq(req);
-  if (ID == null) return;
+  if (ID == null) {
+    errorState(res);
+    return;
+  }
 
   var direction = utils.getTrueDirection(utils.getParameter("direction", req.body));
   var degrees = utils.getParameter("degrees", req.body);
@@ -78,7 +93,7 @@ router.post('/rotate', function(req, res) {
 });
 
 router.post('/devices/locationData', function(req, res) {
-  utils.dateLog("POST Request! /device/locationData");
+  utils.dateLog("POST Request! /devices/locationData");
   var robot = utils.getParameter("robot-one", req.body);
   if (robot != null) {
     var rotation = utils.getParameter("rotation", robot);
@@ -87,6 +102,34 @@ router.post('/devices/locationData', function(req, res) {
       console.log("rotation: %d location x: %d location y: %d", rotation, location.x, location.y);
     }
   }
+  res.sendStatus(200);
+  res.end();
+});
+
+router.post('/calibrate', function(req, res) {
+  utils.dateLog("POST Request! /calibrate");
+  var ID = getDeviceIDFromReq(req);
+  if (ID == null)  {
+    errorState(res);
+    return;
+  }
+
+  var data = utils.getCalibrationPost(req.body);
+  if (data == null || !(data instanceof Array)) {
+    errorState(res);
+    return;
+  }
+  for (var i = 0; i < data.length; i++) {
+    var element = data[i];
+    if ("value" in element) {
+      particle.loadToQueue(ID, element.endpoint, element.value);
+    } else {
+      particle.loadToQueue(ID, element.endpoint, element.valueLeft, element.valueRight);
+    }
+  }
+  /* get the latest values */
+  particle.loadToQueue(ID, utils.OtherEndpointsEnum.GET_CALIBRATION);
+
   res.sendStatus(200);
   res.end();
 });
