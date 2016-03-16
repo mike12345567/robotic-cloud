@@ -26,7 +26,7 @@ function queueOnInterval() {
   if (deviceArray != null && deviceArray != undefined) {
     for (var i = 0; i < deviceArray.length; i++) {
       var device = deviceArray[i];
-      if (device.connected && notConnectedQueue[device.id] != null) {
+      if (module.exports.isRobotIDAvailable(device.id) && notConnectedQueue[device.id] != null) {
         for (var j = 0; j < notConnectedQueue[device.id].length; j++) {
           var object = notConnectedQueue[device.id][j];
           module.exports.loadToQueue(device.id, object);
@@ -38,6 +38,7 @@ function queueOnInterval() {
   }
   setTimeout(queueOnInterval, 500);
 }
+
 /*******************
  *  INIT PARTICLE  *
  *******************/
@@ -89,9 +90,11 @@ function openEventStream() {
           break;
         case EventEnum.FAILED:
           storage.storeEvent(name, EventEnum.FAILED);
+          storage.setRobotAsDead(name);
           break;
         case EventEnum.HAS_FAILED:
           storage.storeEvent(name, EventEnum.HAS_FAILED);
+          storage.setRobotAsDead(name);
           break;
         default:
           console.log("EVENT UNHANDLED!");
@@ -130,7 +133,7 @@ function getDeviceByID(ID) {
 }
 
 function postData(ID, string) {
-  if (!getDeviceByID(ID).connected) {
+  if (!module.exports.isRobotIDAvailable(ID)) {
     if (notConnectedQueue[ID] == null || notConnectedQueue[ID] == undefined) {
       notConnectedQueue[ID] = [];
     }
@@ -153,6 +156,14 @@ function postData(ID, string) {
 }
 
 module.exports = {
+  isRobotAvailable: function(deviceName) {
+    return getDeviceByID(this.getDeviceIDFromName(deviceName)).connected;
+  },
+
+  isRobotIDAvailable: function(deviceID) {
+    return getDeviceByID(deviceID).connected;
+  },
+
   loadToQueue: function(deviceID, cmd) {
     /* don't repeat some specific commands */
     for (var i = 0; i < queue.length; i++) {

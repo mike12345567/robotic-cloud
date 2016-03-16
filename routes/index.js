@@ -5,6 +5,7 @@ var utils = require('../utils.js');
 var storage = require('../storage.js');
 var serializer = require('../serializer.js');
 var particle = require('../particle-calls.js');
+var locationData = require('../location.js');
 var path = require('path');
 
 /* GET home page. */
@@ -31,6 +32,10 @@ router.get('/events', function(req, res) {
 
 router.get('/calibrationValues', function(req, res) {
   getAllSpecificData("calibrationValues", req, res, "getAllCalibration");
+});
+
+router.get('/locationList', function(req, res) {
+  getAllSpecificData("locationList", req, res, "getAllLocationData");
 });
 
 function getAllSpecificData(name, req, res, storageName) {
@@ -92,6 +97,7 @@ router.post('/rotate', function(req, res) {
   res.end();
 });
 
+/* this will pass the data for robots that it can find, therefore is under /devices */
 router.post('/devices/locationData', function(req, res) {
   utils.dateLog("POST Request! /devices/locationData");
   var robot = utils.getParameter("robot-one", req.body);
@@ -100,6 +106,7 @@ router.post('/devices/locationData', function(req, res) {
     var location = utils.getParameter("location", robot);
     if (rotation != null && location != null) {
       console.log("rotation: %d location x: %d location y: %d", rotation, location.x, location.y);
+      locationData.addNewLocationData("testbot-one", location, rotation);
     }
   }
   res.sendStatus(200);
@@ -109,7 +116,7 @@ router.post('/devices/locationData', function(req, res) {
 router.post('/calibrate', function(req, res) {
   utils.dateLog("POST Request! /calibrate");
   var ID = getDeviceIDFromReq(req);
-  if (ID == null)  {
+  if (ID == null) {
     errorState(res);
     return;
   }
@@ -129,6 +136,21 @@ router.post('/calibrate', function(req, res) {
   }
   /* get the latest values */
   particle.loadToQueue(ID, utils.OtherEndpointsEnum.GET_CALIBRATION);
+
+  res.sendStatus(200);
+  res.end();
+});
+router.post('/reset', function(req, res) {
+  utils.dateLog("POST Request! /reset");
+  var name = getDeviceName(req);
+  var ID = getDeviceIDFromReq(req);
+  if (ID == null) {
+    errorState(res);
+    return;
+  }
+
+  particle.particlePost(ID, utils.OtherEndpointsEnum.RESET_FAILED);
+  storage.setRobotAsAlive(name);
 
   res.sendStatus(200);
   res.end();

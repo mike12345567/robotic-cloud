@@ -1,9 +1,11 @@
 var util = require("./utils.js");
+var locationData = require("./location.js");
 
 var distanceMap = [];
 var eventMap = [];
 var calibrationMap = [];
 var gyroReadingsMap = [];
+var deadRobotsMap = [];
 var maxGyroRead = 22000;
 
 module.exports = {
@@ -28,6 +30,29 @@ module.exports = {
     GYRO_G_X : "gyroGX",
     GYRO_G_Y : "gyroGY",
     GYRO_G_Z : "gyroGZ"
+  },
+
+  setRobotAsDead: function (deviceName) {
+    initArray(deadRobotsMap, deviceName);
+    var deadObject = {};
+    deadObject.alive = false;
+    deadObject.deadAt = new Date().getTime();
+    deadRobotsMap[deviceName] = deadObject;
+  },
+
+  setRobotAsAlive: function (deviceName) {
+    initArray(deadRobotsMap, deviceName);
+    var deadObject = deadRobotsMap[deviceName];
+    if (deadObject == null) {
+      deadObject = {};
+    }
+    deadObject.alive = true;
+    deadObject.deadAt = null;
+  },
+
+  getRobotHealthStatus: function (deviceName) {
+    initArray(deadRobotsMap, deviceName);
+    return deadRobotsMap[deviceName];
   },
 
   storeEvent: function (deviceName, eventName) {
@@ -64,9 +89,8 @@ module.exports = {
     }
   },
 
-  getLatestFromMap: function (deviceName, map, key) {
-    var length = map[deviceName][key].length - 1;
-    return map[deviceName][key][length];
+  getLatestDistance: function (deviceName) {
+    return getLatestDataFromMap(deviceName, distanceMap);
   },
 
   getAllDistances: function (deviceName) {
@@ -81,10 +105,29 @@ module.exports = {
     return getAllDataFromMap(deviceName, eventMap);
   },
 
+  getLatestEvent: function (deviceName) {
+    return getLatestDataFromMap(deviceName, eventMap);
+  },
+
   getAllCalibration: function (deviceName) {
     return getAllDataFromMap(deviceName, calibrationMap);
+  },
+
+  getAllLocationData: function(deviceName) {
+    return locationData.getHistoricalLocationData(deviceName);
   }
 };
+
+function getLatestDataFromMap(deviceName, map) {
+  var array = [];
+  var idx = 0;
+
+  for (var key in map[deviceName]) {
+    initArray(array, key);
+    array[key][0] = map[deviceName][key][map[deviceName][key].length-1];
+  }
+  return array;
+}
 
 function getAllDataFromMap(deviceName, map) {
   var array = [];

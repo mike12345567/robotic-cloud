@@ -79,6 +79,9 @@ module.exports = {
   },
 
   endJson: function(res) {
+    if (obj.length == 1) {
+      obj = obj[0]; // don't need it to be JSON array if its single object
+    }
     var response = JSON.stringify(obj);
     res.contentType('application/json');
     res.send(response);
