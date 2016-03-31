@@ -1,10 +1,57 @@
 var accessToken = "d451f895e6d72efc774b82b6de71bed6ba43522c";
-var functionName = 'makeMove';
+var functionName = "makeMove";
 
-var storage = require('./storage.js');
-var base64js = require('./b64.js');
-var http = require('http');
-var utils = require('./utils.js');
+var storage = require("./storage.js");
+var base64js = require("./b64.js");
+var http = require("http");
+var utils = require("./utils.js");
+var coap = require("coap");
+var URL = require("url");
+// Local IP, get from OS
+var os = require('os');
+var ifaces = os.networkInterfaces();
+// local IP address
+var server = coap.createServer(), mcastServer;
+var COAP_PORT = 5683;
+
+Object.keys(ifaces).forEach(function (ifname) {
+  var alias = 0;
+
+  ifaces[ifname].forEach(function (iface) {
+    if ('IPv4' !== iface.family || iface.internal !== false) {
+      // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
+      return;
+    }
+
+    // 00:50:56 and 0a:00:27 are virtual mac addresses assigned by VMWare and VirtualBox respectively
+    if (iface.mac.indexOf("00:50:56") == -1 && iface.mac.indexOf("0a:00:27") == -1) {
+      if (mcastServer != null) {
+        throw "CONFLICTING LOCAL IP ADDRESSES!";
+      } else {
+        // create the server now that we know the interface it should be created on
+        // we will still run this loop to make sure there is no conflict, throw exception if that occurs
+        createMcastServer(iface.address);
+      }
+    }
+  });
+});
+
+function createMcastServer(IP) {
+  // build CoAP mcast server
+  mcastServer = coap.createServer({ multicastAddress: "234.234.234.234", multicastInterface: IP });
+
+  mcastServer.on('request', function(req, res) {
+    /* cannot respond to mcast */
+    console.log("LOCAL AREA COMMS - " + req.url);
+    var urlParts = req.url.split("/");
+    handleRequest({data:req.payload.toString('utf-8'), coreid: urlParts[1], name:urlParts[2]});
+    res.end();
+  });
+
+  mcastServer.listen(COAP_PORT, function() {
+    console.log("MCAST SERVER LISTENING");
+  });
+}
 
 /*******************
  *    RUN QUEUE    *
@@ -42,7 +89,7 @@ function queueOnInterval() {
 /*******************
  *  INIT PARTICLE  *
  *******************/
-var Particle = require('particle-api-js');
+var Particle = require("particle-api-js");
 var particle = new Particle();
 updateDevices();
 openEventStream();
@@ -55,56 +102,65 @@ EventEnum = {
   GYRO_READING_VALUES : "gyroscopeReadings",
   STATUS              : "spark/status",
   FAILED              : "failed",
-  HAS_FAILED          : "hasFailed"
+  HAS_FAILED          : "hasFailed",
+  LOCAL_IP            : "localIP"
 };
 
 /********************
  *  PARTICLE EVENTS *
  ********************/
 function openEventStream() {
-  particle.getEventStream({deviceId: 'mine', auth: accessToken}).then(function(stream) {
-    stream.on('event', function(data) {
+  particle.getEventStream({deviceId: "mine", auth: accessToken}).then(function(stream) {
+    stream.on("event", function(data) {
       console.log("EVENT - " + data.name + " - " + data.published_at);
-      var name = module.exports.getDeviceNameFromID(data.coreid);
-      switch (data.name) {
-        case EventEnum.COMPLETE:
-          storage.storeEvent(name, EventEnum.COMPLETE);
-          break;
-        case EventEnum.STOPPED:
-          storage.storeEvent(name, EventEnum.STOPPED);
-          break;
-        case EventEnum.CALIBRATION_VALUES:
-          var temp = base64js.toByteArray(data.data);
-          storage.storeCalibration(name, temp);
-          break;
-        case EventEnum.ULTRASONIC_VALUES:
-          var temp = base64js.toByteArray(data.data);
-          storage.storeDistances(name, temp);
-          break;
-        case EventEnum.GYRO_READING_VALUES:
-          var temp = base64js.toByteArray(data.data);
-          storage.storeGyroReadings(name, temp);
-          break;
-        case EventEnum.STATUS:
-          updateDevices();
-          break;
-        case EventEnum.FAILED:
-          storage.storeEvent(name, EventEnum.FAILED);
-          storage.setRobotAsDead(name);
-          break;
-        case EventEnum.HAS_FAILED:
-          storage.storeEvent(name, EventEnum.HAS_FAILED);
-          storage.setRobotAsDead(name);
-          break;
-        default:
-          console.log("EVENT UNHANDLED!");
-      }
+      handleRequest(data);
     });
-    stream.on('end', function() {
+    stream.on("end", function() {
       console.log("ended!  re-opening in 3 seconds...");
       setTimeout(openEventStream, 3 * 1000);
     });
   });
+}
+
+function handleRequest(data) {
+  var name = module.exports.getDeviceNameFromID(data.coreid);
+  switch (data.name) {
+    case EventEnum.COMPLETE:
+      storage.storeEvent(name, EventEnum.COMPLETE);
+      break;
+    case EventEnum.STOPPED:
+      storage.storeEvent(name, EventEnum.STOPPED);
+      break;
+    case EventEnum.CALIBRATION_VALUES:
+      var temp = base64js.toByteArray(data.data);
+      storage.storeCalibration(name, temp);
+      break;
+    case EventEnum.ULTRASONIC_VALUES:
+      var temp = base64js.toByteArray(data.data);
+      storage.storeDistances(name, temp);
+      break;
+    case EventEnum.GYRO_READING_VALUES:
+      var temp = base64js.toByteArray(data.data);
+      storage.storeGyroReadings(name, temp);
+      break;
+    case EventEnum.STATUS:
+      updateDevices();
+      break;
+    case EventEnum.FAILED:
+      storage.storeEvent(name, EventEnum.FAILED);
+      storage.setRobotAsDead(name);
+      break;
+    case EventEnum.HAS_FAILED:
+      storage.storeEvent(name, EventEnum.HAS_FAILED);
+      storage.setRobotAsDead(name);
+      break;
+    case EventEnum.LOCAL_IP:
+      var temp = base64js.toByteArray(data.data);
+      storage.storeLocalIP(name, temp);
+      break;
+    default:
+      console.log("EVENT UNHANDLED! : " + data.name);
+  }
 }
 
 function updateDevices() {
@@ -144,15 +200,45 @@ function postData(ID, string) {
       argument: string, auth: accessToken
     });
     postCall.then(function (data) {
-      console.log("COMPLETED POST - " + data.toString());
-      res.setEncoding('utf8');
-      res.on('data', function (chunk) {
-        console.log('Response: ' + chunk);
+      console.log("COMPLETED POST - " + data.statusCode);
+      res.setEncoding("utf8");
+      res.on("data", function (chunk) {
+        console.log("Response: " + chunk);
       });
     }, function (err) {
       console.log("FAILED TO POST - " + string + " - " + err.errorDescription + " - " + err.info);
     });
   }
+}
+
+function localPostData(deviceName, data) {
+  var localIP = storage.getLocalIP(deviceName);
+  var deviceID = module.exports.getDeviceIDFromName(deviceName);
+
+  if (localIP == null || localIP == undefined || module.exports.isRobotAvailable(deviceName)) {
+    module.exports.loadToQueue(deviceID, data);
+    return;
+  }
+
+  server.on("listen", function() {
+    var url = URL.parse("coap://" + localIP + "/" + functionName);
+    url.port = COAP_PORT;
+    url.confirmable = true;
+    url.observable = false;
+
+    var request = coap.request(url);
+
+    request.on("response", function(res) {
+      res.pipe(process.stdout);
+    });
+    request.on("error", function(err) {
+      console.log("FAILED TO SEND : " + err.message);
+      module.exports.loadToQueue(deviceID, data);
+    });
+
+    request.write(data);
+    request.end();
+  });
 }
 
 module.exports = {
@@ -197,11 +283,19 @@ module.exports = {
     }
 
     if (deviceID != "all") {
-      postData(deviceID, dataString);
+      if (utils.isLocalCommunication(cmd)) {
+        localPostData(modules.exports.getDeviceNameFromID(deviceID), dataString);
+      } else {
+        postData(deviceID, dataString);
+      }
     } else {
       var deviceArray = module.exports.deviceArray;
       for (var i = 0; i < deviceArray.length; i++) {
-        postData(deviceArray[i].id, dataString);
+        if (utils.isLocalCommunication(cmd)) {
+          localPostData(modules.exports.getDeviceNameFromID(deviceArray[i].id), dataString);
+        } else {
+          postData(deviceArray[i].id, dataString);
+        }
       }
     }
   },

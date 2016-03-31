@@ -18,13 +18,17 @@ function addToJsonObject(arg) {
 function addJsonBlock(key, block) {
   var temp = {};
   temp.type = key;
-  temp.attributes = [];
-  if (block.length > 1) {
-    for (var i = 0; i < block.length; i++) {
-      temp.attributes.push(block[i]);
+  if (block instanceof Array) {
+    if (block.length > 1) {
+      temp.attributes = [];
+      for (var i = 0; i < block.length; i++) {
+        temp.attributes.push(block[i]);
+      }
+    } else {
+      temp.attributes = block[0];
     }
   } else {
-    temp.attributes.push(block[0]);
+    temp.attributes = block;
   }
   obj.push(temp);
 }
@@ -80,19 +84,24 @@ module.exports = {
 
   endJson: function(res) {
     if (obj.length == 1) {
-      obj = obj[0]; // don't need it to be JSON array if its single object
+      obj = obj[0]; // don"t need it to be JSON array if its single object
     }
     var response = JSON.stringify(obj);
-    res.contentType('application/json');
+    res.contentType("application/json");
     res.send(response);
     res.end();
   },
 
   genKeyPair: function (key, value) {
-    if (value instanceof Object && "value" in value && "timestamp" in value) {
-      var pair = {"type" : key, "attributes" : {"value" : value.value, "timestamp" : value.timestamp}};
+    if (value instanceof Object && "value" in value) {
+      if ("timestamp" in value) {
+        var pair = {"type" : key, "attributes" : {"value" : value.value, "timestamp" : value.timestamp}};
+      } else {
+        var pair = {"type": key, "attributes" : {"value": value.value}};
+      }
     } else {
-      var pair = {"type": key, "attributes" : {"value": value.value}};
+      pair = value;
+      pair.type = key;
     }
     return pair;
   },

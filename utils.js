@@ -33,6 +33,12 @@ module.exports = {
     GET_CALIBRATION : "sendCalibration"
   },
 
+  isLocalCommunication: function (endpoint) {
+    var localCommsEndpoint = [this.MovementEndpointsEnum.DIRECTION_TURN_LEFT, this.MovementEndpointsEnum.DIRECTION_TURN_RIGHT,
+                              this.MovementEndpointsEnum.DIRECTION_FORWARD, this.MovementEndpointsEnum.DIRECTION_BACKWARD,
+                              this.MovementEndpointsEnum.DIRECTION_STOP];
+    return localCommsEndpoint.indexOf(endpoint) > -1;
+  },
 
   isNoRepeatEndpoint: function (endpoint) {
     var noRepeat = [this.MovementEndpointsEnum.DIRECTION_STOP, this.OtherEndpointsEnum.RESET_FAILED,
@@ -151,6 +157,11 @@ module.exports = {
     }
 
     return array;
+  },
+
+  isTurn: function(direction) {
+    return direction == this.MovementEndpointsEnum.DIRECTION_TURN_RIGHT ||
+      direction ==  this.MovementEndpointsEnum.DIRECTION_TURN_RIGHT;
   },
 
   getTrueDirection: function(passedIn) {

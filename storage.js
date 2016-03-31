@@ -6,6 +6,7 @@ var eventMap = [];
 var calibrationMap = [];
 var gyroReadingsMap = [];
 var deadRobotsMap = [];
+var localIPsMap = [];
 var maxGyroRead = 22000;
 
 module.exports = {
@@ -81,12 +82,21 @@ module.exports = {
     var i = 0;
 
     for (var property in this.GyroReadingsEnum) {
-      var value = array[i++] | array[i++] << 8;
+      var value = array[i++] | array[i++] << 8 | array[i++] << 16 | array[i++] << 24;
       if (value > maxGyroRead) {
         value -= 0x10000;
       }
       addToMap(deviceName, gyroReadingsMap, this.GyroReadingsEnum[property], value);
     }
+  },
+
+  storeLocalIP: function (deviceName, IP) {
+    var ipString = IP[3] + "." + IP[2] + "." + IP[1] + "." + IP[0];
+    localIPsMap[deviceName] = ipString;
+  },
+
+  getLocalIP: function(deviceName) {
+    return localIPsMap[deviceName];
   },
 
   getLatestDistance: function (deviceName) {
@@ -131,7 +141,6 @@ function getLatestDataFromMap(deviceName, map) {
 
 function getAllDataFromMap(deviceName, map) {
   var array = [];
-  var idx = 0;
 
   for (var key in map[deviceName]) {
     initArray(array, key);
