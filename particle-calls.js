@@ -6,12 +6,13 @@ var base64js = require("./b64.js");
 var http = require("http");
 var utils = require("./utils.js");
 var coap = require("coap");
+coap.parameters.maxRetransmit = 0;
 var URL = require("url");
 // Local IP, get from OS
 var os = require('os');
 var ifaces = os.networkInterfaces();
 // local IP address
-var server = coap.createServer(), mcastServer;
+var mcastServer;
 var COAP_PORT = 5683;
 
 Object.keys(ifaces).forEach(function (ifname) {
@@ -215,30 +216,25 @@ function localPostData(deviceName, data) {
   var localIP = storage.getLocalIP(deviceName);
   var deviceID = module.exports.getDeviceIDFromName(deviceName);
 
-  if (localIP == null || localIP == undefined || module.exports.isRobotAvailable(deviceName)) {
+  if (localIP == null || localIP == undefined || !module.exports.isRobotAvailable(deviceName)) {
     module.exports.loadToQueue(deviceID, data);
     return;
   }
 
-  server.on("listen", function() {
-    var url = URL.parse("coap://" + localIP + "/" + functionName);
-    url.port = COAP_PORT;
-    url.confirmable = true;
-    url.observable = false;
+  var url = URL.parse("coap://" + localIP + "/" + functionName);
+  url.port = COAP_PORT;
+  url.confirmable = true;
+  url.observable = false;
+  url.method = "POST";
+  var request = coap.request(url);
 
-    var request = coap.request(url);
-
-    request.on("response", function(res) {
-      res.pipe(process.stdout);
-    });
-    request.on("error", function(err) {
-      console.log("FAILED TO SEND : " + err.message);
-      module.exports.loadToQueue(deviceID, data);
-    });
-
-    request.write(data);
-    request.end();
+  request.on("error", function(err) {
+    console.log("FAILED TO SEND : " + err.message);
+    module.exports.loadToQueue(deviceID, data);
   });
+
+  request.write(data);
+  request.end();
 }
 
 module.exports = {
@@ -284,7 +280,7 @@ module.exports = {
 
     if (deviceID != "all") {
       if (utils.isLocalCommunication(cmd)) {
-        localPostData(modules.exports.getDeviceNameFromID(deviceID), dataString);
+        localPostData(module.exports.getDeviceNameFromID(deviceID), dataString);
       } else {
         postData(deviceID, dataString);
       }
@@ -292,7 +288,7 @@ module.exports = {
       var deviceArray = module.exports.deviceArray;
       for (var i = 0; i < deviceArray.length; i++) {
         if (utils.isLocalCommunication(cmd)) {
-          localPostData(modules.exports.getDeviceNameFromID(deviceArray[i].id), dataString);
+          localPostData(module.exports.getDeviceNameFromID(deviceArray[i].id), dataString);
         } else {
           postData(deviceArray[i].id, dataString);
         }

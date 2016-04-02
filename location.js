@@ -1,6 +1,11 @@
 var particle = require("./particle-calls.js");
 var utils = require("./utils.js");
 
+/* Interval data */
+var noUpdateShutdownTimeMs = 3000;
+var lastUpdateTimeMs = 0;
+var intervalId;
+
 var historicalWindowMs = 5000;
 var moveTimeThresholdMs = 300;
 var lastLocationEntryTimeMs = 0;
@@ -88,6 +93,7 @@ function rotateRobotToTarget(deviceName) {
 
   switch (robotMovingData.moving) {
     case true:
+      setInterval(function() { stopRobotIfRequired(deviceName) }, moveTimeThresholdMs);
       /* stop rotation when in threshold */
       if (robotMovingData.startMoveTimeMs + moveTimeThresholdMs > new Date().getTime()) {
         return;
@@ -125,6 +131,18 @@ function rotateRobotToTarget(deviceName) {
   robotMoveData[deviceName] = robotMovingData;
 }
 
+function stopRobotIfRequired(deviceName) {
+ if (robotMoveData[deviceName].moving) {
+   if (new Date().getTime() - lastUpdateTimeMs > noUpdateShutdownTimeMs) {
+     particle.particlePost(particle.getDeviceIDFromName(deviceName), utils.MovementEndpointsEnum.DIRECTION_STOP);
+     robotMoveData[deviceName].moving = false;
+     targetRotationMap[deviceName] = null;
+   }
+ } else {
+   clearInterval(intervalId);
+ }
+}
+
 module.exports = {
   addNewLocationData: function (deviceName, location, rotation) {
     if ("x" in location && "y" in location) {
@@ -132,6 +150,7 @@ module.exports = {
       latestRotationMap[deviceName] = rotation;
       testForHistoricalUpdate({deviceName:deviceName, location:location, rotation:rotation});
     }
+    lastUpdateTimeMs = new Date().getTime();
     rotateRobotToTarget(deviceName);
   },
 
@@ -152,6 +171,12 @@ module.exports = {
   },
 
   setTargetRotation: function (deviceName, rotation) {
+    initMovingData(deviceName);
+
+    robotMoveData[deviceName].moving = false;
+    robotMoveData[deviceName].startRotation = 0;
+    robotMoveData[deviceName].startMoveTimeMs = 0;
+
     targetRotationMap[deviceName] = rotation;
   },
 

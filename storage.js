@@ -7,7 +7,6 @@ var calibrationMap = [];
 var gyroReadingsMap = [];
 var deadRobotsMap = [];
 var localIPsMap = [];
-var maxGyroRead = 22000;
 
 module.exports = {
   UltrasonicPosEnum: {
@@ -83,9 +82,6 @@ module.exports = {
 
     for (var property in this.GyroReadingsEnum) {
       var value = array[i++] | array[i++] << 8 | array[i++] << 16 | array[i++] << 24;
-      if (value > maxGyroRead) {
-        value -= 0x10000;
-      }
       addToMap(deviceName, gyroReadingsMap, this.GyroReadingsEnum[property], value);
     }
   },
