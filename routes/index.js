@@ -18,7 +18,7 @@ var path = require("path");
  */
 router.get("/", function(req, res) {
   utils.dateLog("Page access! (Main page)");
-  res.sendFile(path.resolve("views/index.html"));
+  res.sendFile(path.resolve("../views/index.html"));
 });
 
 /**
@@ -29,7 +29,7 @@ router.get("/devices", function(req, res) {
   utils.dateLog("GET access! /devices");
   serializer.startJson();
   var names = particle.getAllDeviceNames();
-  serializer.addJson(serializer.genKeyPairs("deviceName", names));
+  serializer.addJsonBlock(serializer.genKeyPairs("deviceName", names));
   serializer.endJson(res);
 });
 
@@ -42,6 +42,17 @@ router.get("/devices", function(req, res) {
  */
 router.get("/distances", function(req, res) {
   getAllSpecificData("distances", req, res, "getAllDistances");
+});
+
+/**
+ * Gets all historical gyroscope updates for a robot accel and gyro (xyz)
+ * @param expects the header or get body to contain a "deviceName" for the device to get data from.
+ * @return JSON Object with a "type" option, this states which accel/gyro reading this is
+ * There will also be an "attributes" array which contains JSON objects each with a value and timestamp. The values
+ * are represented as CM in this case.
+ */
+router.get("/gyroReadings", function(req, res) {
+  getAllSpecificData("gyroReadings", req, res, "getAllGyroReadings");
 });
 
 /**
@@ -237,9 +248,9 @@ function getAllSpecificData(name, req, res, storageName) {
 
   if (deviceName != undefined && deviceName != null) {
     serializer.startJson();
-    var events = storage[storageName](deviceName);
-    for (var key in events) {
-      serializer.addJsonBlock(serializer.genKeyPairs(key, events[key]));
+    var array = storage[storageName](deviceName);
+    for (var key in array) {
+      serializer.addJsonBlock(serializer.genKeyPairs(key, array[key]));
     }
     serializer.endJson(res);
   } else {

@@ -45,7 +45,7 @@ function createMcastServer(IP) {
     /* cannot respond to mcast */
     console.log("LOCAL AREA COMMS - " + req.url);
     var urlParts = req.url.split("/");
-    handleRequest({data:req.payload.toString('utf-8'), coreid: urlParts[1], name:urlParts[2]});
+    //handleRequest({data:req.payload.toString('utf-8'), coreid: urlParts[1], name:urlParts[2]});
     res.end();
   });
 
@@ -95,18 +95,6 @@ var particle = new Particle();
 updateDevices();
 openEventStream();
 
-EventEnum = {
-  COMPLETE            : "complete",
-  CALIBRATION_VALUES  : "calibrationValues",
-  ULTRASONIC_VALUES   : "distanceCm",
-  STOPPED             : "stopped",
-  GYRO_READING_VALUES : "gyroscopeReadings",
-  STATUS              : "spark/status",
-  FAILED              : "failed",
-  HAS_FAILED          : "hasFailed",
-  LOCAL_IP            : "localIP"
-};
-
 /********************
  *  PARTICLE EVENTS *
  ********************/
@@ -126,36 +114,36 @@ function openEventStream() {
 function handleRequest(data) {
   var name = module.exports.getDeviceNameFromID(data.coreid);
   switch (data.name) {
-    case EventEnum.COMPLETE:
-      storage.storeEvent(name, EventEnum.COMPLETE);
+    case storage.EventEnum.COMPLETE:
+      storage.storeEvent(name, storage.EventEnum.COMPLETE);
       break;
-    case EventEnum.STOPPED:
-      storage.storeEvent(name, EventEnum.STOPPED);
+    case storage.EventEnum.STOPPED:
+      storage.storeEvent(name, storage.EventEnum.STOPPED);
       break;
-    case EventEnum.CALIBRATION_VALUES:
+    case storage.EventEnum.CALIBRATION_VALUES:
       var temp = base64js.toByteArray(data.data);
       storage.storeCalibration(name, temp);
       break;
-    case EventEnum.ULTRASONIC_VALUES:
+    case storage.EventEnum.ULTRASONIC_VALUES:
       var temp = base64js.toByteArray(data.data);
       storage.storeDistances(name, temp);
       break;
-    case EventEnum.GYRO_READING_VALUES:
+    case storage.EventEnum.GYRO_READING_VALUES:
       var temp = base64js.toByteArray(data.data);
       storage.storeGyroReadings(name, temp);
       break;
-    case EventEnum.STATUS:
+    case storage.EventEnum.STATUS:
       updateDevices();
       break;
-    case EventEnum.FAILED:
-      storage.storeEvent(name, EventEnum.FAILED);
+    case storage.EventEnum.FAILED:
+      storage.storeEvent(name, storage.EventEnum.FAILED);
       storage.setRobotAsDead(name);
       break;
-    case EventEnum.HAS_FAILED:
-      storage.storeEvent(name, EventEnum.HAS_FAILED);
+    case storage.EventEnum.HAS_FAILED:
+      storage.storeEvent(name, storage.EventEnum.HAS_FAILED);
       storage.setRobotAsDead(name);
       break;
-    case EventEnum.LOCAL_IP:
+    case storage.EventEnum.LOCAL_IP:
       var temp = base64js.toByteArray(data.data);
       storage.storeLocalIP(name, temp);
       break;
@@ -229,8 +217,7 @@ function localPostData(deviceName, data) {
   var request = coap.request(url);
 
   request.on("error", function(err) {
-    console.log("FAILED TO SEND : " + err.message);
-    module.exports.loadToQueue(deviceID, data);
+    // No error as we cannot handle retransmission with IoT
   });
 
   request.write(data);
@@ -238,6 +225,8 @@ function localPostData(deviceName, data) {
 }
 
 module.exports = {
+  storage: storage,
+
   isRobotAvailable: function(deviceName) {
     return getDeviceByID(this.getDeviceIDFromName(deviceName)).connected;
   },
@@ -326,7 +315,8 @@ module.exports = {
     var array = [];
     var deviceArray = module.exports.deviceArray;
     for (var i = 0; i < deviceArray.length; i++) {
-      array.push(deviceArray[i].name);
+      var obj = {type: "deviceName", value: deviceArray[i].name};
+      array.push(obj);
     }
     return array;
   },

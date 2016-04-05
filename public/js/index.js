@@ -1,12 +1,20 @@
 var deviceID = "300032001147343339383037";
+var selectedDeviceName = "";
 var accessToken = "da837cbd013221af2cac61eea03e15d8459c49ea";
 var funcName = "makeMove";
 var rotationUnit = "degrees";
 var noSelected = "none";
 var waitForLift = false;
-
-var maxGyroRead = 22000;
 var wasFail = false;
+
+GyroReadingsEnum = {
+    GYRO_A_X : "gyroAX",
+    GYRO_A_Y : "gyroAY",
+    GYRO_A_Z : "gyroAZ",
+    GYRO_G_X : "gyroGX",
+    GYRO_G_Y : "gyroGY",
+    GYRO_G_Z : "gyroGZ"
+};
 
 EventEnum = {
     COMPLETE : "complete",
@@ -15,8 +23,14 @@ EventEnum = {
     STOPPED : "stopped",
     FAILED : "failed",
     HAS_FAILED : "hasFailed",
-    GYROSCOPE_READINGS : "gyroscopeReadings",
-}
+    GYROSCOPE_READINGS : "gyroscopeReadings"
+};
+
+MotorDirectionEnum = {
+    DIRECTION_FORWARD  : 1 << 0,
+    DIRECTION_BACKWARD : 1 << 1,
+    DIRECTION_MAX      : 1 << 2
+};
 
 ButtonEnum = {
     FORWARD : {cmd: "forward", btnName: "forward-btn"},
@@ -28,15 +42,15 @@ ButtonEnum = {
     CAL_TURNING : {cmd: "calibrateTurning", btnName: "cal-turning-btn"},
     CAL_WHEELS : {cmd: "calibrateSpeed", btnName: "cal-wheels-btn"},
     CAL_FRICTION : {cmd: "calibrateFriction", btnName: "cal-friction-btn"},
-    RESET_FAIL : {cmd: "resetFailed", btnName: "cal-reset-fail-btn"},
-}
+    RESET_FAIL : {cmd: "resetFailed", btnName: "cal-reset-fail-btn"}
+};
 
 JoystickEnum = {
     JOY_FWD : { cmd: "forward", btnName: "joy-fwd-btn"},
     JOY_LEFT : { cmd: "turnLeft", btnName: "joy-left-btn"},
     JOY_RIGHT : { cmd: "turnRight", btnName: "joy-right-btn"},
-    JOY_BACK : { cmd: "backward", btnName: "joy-back-btn"},
-}
+    JOY_BACK : { cmd: "backward", btnName: "joy-back-btn"}
+};
 
 InputEnum = {
     DISTANCE : "distance-input",
@@ -50,7 +64,9 @@ InputEnum = {
     DIST_FRONT : "dist-front-output",
     GYRO_READ : "gyro-read-output",
     EVENTS : "event-area",
-}
+    CAL_DIR_LEFT: "left-direction-input",
+    CAL_DIR_RIGHT: "right-direction-input"
+};
 
 $(document).ready(function() {
     spark.login({accessToken: accessToken});
@@ -123,7 +139,7 @@ $(document).ready(function() {
                 var rightWheel = getInput(InputEnum.CAL_RIGHT_WHEEL);
                 var leftWheel = getInput(InputEnum.CAL_LEFT_WHEEL);
                 if (rightWheel == null || leftWheel == null) return;
-                particleCall(getCmd(name), rightWheel, leftWheel);
+                particleCall(getCmd(name), leftWheel, rightWheel);
             }
 
             if (name == ButtonEnum.CAL_TURNING.btnName) {
@@ -153,27 +169,67 @@ $(document).ready(function() {
             particleCall(getCmd(name));
             waitForLift = true;
         });
+        $("#" + button.btnName).mouseup(function() {
+            if (waitForLift) {
+                particleCall("stop");
+                waitForLift = false;
+            }
+        });
     }
 
-    $(document).mouseup(function() {
-        if (waitForLift) {
-            particleCall("stop");
-            waitForLift = false;
-        }
-    });
 
     $.get("http://localhost:3000/devices", function( data ) {
-        for (var i = 0; i < data.length; i++) {
-            $("#robotDropDownList").append("<li class=\"element\"><a href=\"#\">" + data[i].deviceName + "</a></li>");
+        for (var i = 0; i < data.attributes.length; i++) {
+            $("#robotDropDownList").append("<li class=\"element\"><a href=\"#\">" + data.attributes[i].value + "</a></li>");
         }
         $(".dropdown-menu li a").click(function(){
-
-            $(".btn:first-child").text($(this).text());
-            $(".btn:first-child").val($(this).text());
-
+            var dropdown = $("#robotDropDown:first-child");
+            dropdown.text($(this).text());
+            dropdown.val($(this).text());
+            selectedDeviceName = $(this).text();
+            openWebSocket();
         });
     });
+
+    $("#left-direction-input").change(function() {
+        sendUpdatedDirection();
+    });
+
+    $("#right-direction-input").change(function() {
+        sendUpdatedDirection();
+    });
 });
+
+function openWebSocket() {
+    window.WebSocket = window.WebSocket || window.MozWebSocket;
+
+    var connection = new WebSocket('ws://localhost:4201');
+
+    connection.onopen = function () {
+        var obj = {deviceName: selectedDeviceName};
+        connection.send(JSON.stringify(obj));
+    };
+
+    connection.onerror = function (error) {
+    };
+
+    connection.onmessage = function (message) {
+        try {
+            var json = JSON.parse(message.data);
+
+        } catch (e) {
+            console.log('This doesn\'t look like a valid JSON: ', message.data);
+            return;
+        }
+    };
+}
+
+function sendUpdatedDirection() {
+    var directionLeft = getInput(InputEnum.CAL_DIR_LEFT);
+    var directionRight = getInput(InputEnum.CAL_DIR_RIGHT);
+
+    particleCall("calibrateDirection", directionLeft, directionRight);
+}
 
 function outputEvent(eventName) {
     var date = new Date();
@@ -194,22 +250,16 @@ function outputDistances(array){
     setInput(InputEnum.DIST_FRONT, value.toString() + "cm");
 }
 
-function outputGyroReadings(array) {
-    var i = 0;
-    var ax = (array[i++] | (array[i++] << 8));
-    if (ax > maxGyroRead) ax -= 0x10000;
-    var ay = (array[i++] | (array[i++] << 8));
-    if (ay > maxGyroRead) ay -= 0x10000;
-    var az = (array[i++] | (array[i++] << 8));
-    if (az > maxGyroRead) az -= 0x10000;
-    var gx = (array[i++] | (array[i++] << 8));
-    if (gx > maxGyroRead) gx -= 0x10000;
-    var gy = (array[i++] | (array[i++] << 8));
-    if (gy > maxGyroRead) gy -= 0x10000;
-    var gz = (array[i++] | (array[i++] << 8));
-    if (gz > maxGyroRead) gz -= 0x10000;
-
-    var output = "ax: " + ax.toString() + ", ay: " + ay.toString() + ", az: " + az.toString() +
+function outputGyroReadings(json) {
+    var output = "";
+    for (var property in GyroReadingsEnum) {
+        var enumeration = GyroReadingsEnum[property];
+        var value = json[enumeration].attributes.value;
+        output = output.concat(enumeration + ": ");
+    }
+    var ax = json[GyroReadingsEnum.GYRO_A_X].attributes.value;
+    var xy = json[GyroReadingsEnum.GYRO_A_Y].attributes.value;
+    var output = "ax: " +  + ", ay: " + ay.toString() + ", az: " + az.toString() +
       ", gx: " + gx.toString() + ", gy: " + gy.toString() + ", gz: " + gz.toString();
     setInput(InputEnum.GYRO_READ, output);
 }
@@ -271,7 +321,14 @@ function particleCall(cmd, parameters) {
 
 function getInput(inputName) {
     var value;
-    if (inputName == InputEnum.UNIT) {
+    if (inputName == InputEnum.CAL_DIR_LEFT || inputName == InputEnum.CAL_DIR_RIGHT) {
+        value = $("#" + inputName + " option:selected")[0].value;
+        if (value === "forward") {
+            value = MotorDirectionEnum.DIRECTION_FORWARD;
+        } else {
+            value = MotorDirectionEnum.DIRECTION_BACKWARD;
+        }
+    } else if (inputName == InputEnum.UNIT) {
         value = $("#" + inputName + " option:selected")[0].value;
         if (value == noSelected) {
             value = null;
@@ -284,5 +341,10 @@ function getInput(inputName) {
 }
 
 function setInput(inputName, value) {
-    $("#" + inputName).val(value);
+    if (inputName == InputEnum.CAL_DIR_LEFT || inputName == InputEnum.CAL_DIR_RIGHT) {
+        var string = value == MotorDirectionEnum.DIRECTION_FORWARD ? "forward" : "backward";
+        $("#"+inputName+" option:contains(" + string + ")").prop({selected: true});
+    } else {
+        $("#" + inputName).val(value);
+    }
 }

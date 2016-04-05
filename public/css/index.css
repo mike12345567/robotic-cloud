@@ -19,38 +19,38 @@ h4 {
 }
 
 .panel-body {
-  padding: 0px;
+  padding: 0;
 }
 
-#right-div h4 {
+.right-div h4 {
   margin-bottom: 32px;
 }
 
-#right-div {
+.right-div {
 }
 
-#right-div span {
-  margin-bottom: 0px;
+.right-div span {
+  margin-bottom: 0;
   margin-top: 3px;
   margin-right: 5px;
   width: 90px;
   float: left;
 }
 
-#right-div input, #right-div select {
+.right-div input, .right-div select {
   padding: 5px;
   height: 28px;
   width: 200px;
   margin-bottom: 15px;
 }
 
-#left-div {
+.left-div {
   text-align: center;
 }
 
 .btn {
   width: 300px;
-  margin: 5 0px;
+  margin: 5px 0;
   padding: 10px;
 }
 
@@ -87,12 +87,12 @@ and (min-device-width : 1000px)  {
     margin-left: 13px;
   }
 
-  #right-div {
+  .right-div {
     border-left: 1px dotted #ccc;
     height: 700px;
   }
 
-  #right-div h4 {
+  .right-div h4 {
     margin-left: 40%;
   }
 

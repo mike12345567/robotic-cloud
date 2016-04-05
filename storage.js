@@ -1,5 +1,10 @@
 var util = require("./utils.js");
-var locationData = require("./location.js");
+var websocket, locationData;
+// avoid cyclic dependency issues with node require
+setTimeout(function() {
+  websocket = require("./websocket.js");
+  locationData = require("./location.js");
+}, 100);
 
 var distanceMap = [];
 var eventMap = [];
@@ -32,6 +37,18 @@ module.exports = {
     GYRO_G_Z : "gyroGZ"
   },
 
+  EventEnum: {
+    COMPLETE            : "complete",
+    CALIBRATION_VALUES  : "calibrationValues",
+    ULTRASONIC_VALUES   : "distanceCm",
+    STOPPED             : "stopped",
+    GYRO_READING_VALUES : "gyroscopeReadings",
+    STATUS              : "spark/status",
+    FAILED              : "failed",
+    HAS_FAILED          : "hasFailed",
+    LOCAL_IP            : "localIP"
+  },
+
   setRobotAsDead: function (deviceName) {
     initArray(deadRobotsMap, deviceName);
     var deadObject = {};
@@ -59,6 +76,7 @@ module.exports = {
     var date = new Date();
     var time = date.getTime();
     addToMap(deviceName, eventMap, eventName, eventName + " event at:" + time.toString());
+    websocket.needsUpdated(deviceName, websocket.WebSocketUpdateEnum.EVENTS);
   },
 
   storeCalibration: function (deviceName, array) {
@@ -75,6 +93,7 @@ module.exports = {
     for (var property in this.UltrasonicPosEnum) {
       addToMap(deviceName, distanceMap, this.UltrasonicPosEnum[property], array[i++] | (array[i++] << 8));
     }
+    websocket.needsUpdated(deviceName, websocket.WebSocketUpdateEnum.DISTANCE);
   },
 
   storeGyroReadings: function (deviceName, array) {
@@ -84,6 +103,7 @@ module.exports = {
       var value = array[i++] | array[i++] << 8 | array[i++] << 16 | array[i++] << 24;
       addToMap(deviceName, gyroReadingsMap, this.GyroReadingsEnum[property], value);
     }
+    websocket.needsUpdated(deviceName, websocket.WebSocketUpdateEnum.GYRO_READING);
   },
 
   storeLocalIP: function (deviceName, IP) {
@@ -107,8 +127,33 @@ module.exports = {
     return getAllKeyDataFromMap(deviceName, key, map);
   },
 
+  getAllGyroReadings: function (deviceName) {
+    return getAllDataFromMap(deviceName, gyroReadingsMap);
+  },
+
+  getLatestGyroReading: function(deviceName) {
+    return getLatestDataFromMap(deviceName, gyroReadingsMap);
+  },
+
   getAllEvents: function (deviceName) {
     return getAllDataFromMap(deviceName, eventMap);
+  },
+
+  getEventsFromTimestamp: function (deviceName, timestamp) {
+    var array = [];
+    var idx = 0;
+
+    for (var key in eventMap[deviceName]) {
+      for (var i = 0; i < eventMap[deviceName][key].length; i++) {
+        var element = eventMap[deviceName][key][i];
+        if (element != null && "rawTimestamp" in element && element.rawTimestamp >= timestamp) {
+          array[idx++] = element;
+        }
+      }
+    }
+    array.sort(function (a, b) {
+      return a.rawTimestamp - b.rawTimestamp;
+    });
   },
 
   getLatestEvent: function (deviceName) {
@@ -121,16 +166,22 @@ module.exports = {
 
   getAllLocationData: function(deviceName) {
     return locationData.getHistoricalLocationData(deviceName);
+  },
+
+  getLatestLocation: function(deviceName) {
+    return locationData.getCurrentLocation(deviceName);
+  },
+
+  getLatestRotation: function(deviceName) {
+    return locationData.getCurrentRotation(deviceName);
   }
 };
 
 function getLatestDataFromMap(deviceName, map) {
   var array = [];
-  var idx = 0;
 
   for (var key in map[deviceName]) {
-    initArray(array, key);
-    array[key][0] = map[deviceName][key][map[deviceName][key].length-1];
+    array[key] = map[deviceName][key][map[deviceName][key].length-1];
   }
   return array;
 }
@@ -166,15 +217,16 @@ function addToMap(deviceName, map, key, value) {
   initArray(map, deviceName);
   initArray(map[deviceName], key);
 
-  var obj = {"value" : value, "timestamp" : util.getDateNow()};
+  var obj = {value : value, timestamp : util.getDateNow(), rawTimestamp : new Date().getTime()};
   map[deviceName][key].push(obj);
 }
 
+// only one value, no need for timestamps
 function overwriteToMap(deviceName, map, key, value) {
   initArray(map, deviceName);
   initArray(map[deviceName], key);
 
-  var obj = {"value" : value};
+  var obj = {value : value};
   map[deviceName][key] = [];
   map[deviceName][key].push(obj);
 }

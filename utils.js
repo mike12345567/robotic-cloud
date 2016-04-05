@@ -194,5 +194,30 @@ module.exports = {
       default:
         return null;
     }
+  },
+
+  // check if property can be found in array or object
+  propertyCheck: function (obj, value) {
+    if (obj instanceof Array) {
+      var isFound = false;
+      for (var i = 0; i < obj.length; i++) {
+        isFound = objectCheck(obj[i], value);
+        if (isFound) return isFound;
+      }
+      return isFound;
+    } else {
+      return objectCheck(obj, value);
+    }
   }
 };
+
+function objectCheck(obj, value) {
+  for (var prop in obj) {
+    if (obj.hasOwnProperty(prop)) {
+      if (obj[prop] === value) {
+        return true;
+      }
+    }
+  }
+  return false;
+}

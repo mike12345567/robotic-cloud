@@ -18,18 +18,7 @@ function addToJsonObject(arg) {
 function addJsonBlock(key, block) {
   var temp = {};
   temp.type = key;
-  if (block instanceof Array) {
-    if (block.length > 1) {
-      temp.attributes = [];
-      for (var i = 0; i < block.length; i++) {
-        temp.attributes.push(block[i]);
-      }
-    } else {
-      temp.attributes = block[0];
-    }
-  } else {
-    temp.attributes = block;
-  }
+  temp.attributes = block;
   obj.push(temp);
 }
 
@@ -60,26 +49,23 @@ module.exports = {
     }
   },
 
-  addJsonBlock: function(block) {
+  addJsonBlock: function(block, type) {
     if (!block instanceof Array || !"type" in block) {
       return;
     }
+    var oneTypeSpecified = (type != null);
     var tempArray = [];
-    var finalType = null;
     for (var idx in block) {
-      if (finalType == null) {
-        finalType = block[idx].type;
-      // all the keys must be same for a block
-      } else if (finalType != block[idx].type) {
-        return;
+      if (type == null) {
+        type = block[idx].type;
       }
-      if (block[idx].attributes != null) {
+      if (!oneTypeSpecified && block[idx].attributes != null) {
         tempArray.push(block[idx].attributes);
       } else {
         tempArray.push(block[idx]);
       }
     }
-    addJsonBlock(finalType, tempArray);
+    addJsonBlock(type, tempArray);
   },
 
   endJson: function(res) {
@@ -87,9 +73,13 @@ module.exports = {
       obj = obj[0]; // don"t need it to be JSON array if its single object
     }
     var response = JSON.stringify(obj);
-    res.contentType("application/json");
-    res.send(response);
-    res.end();
+    if (res != null) {
+      res.contentType("application/json");
+      res.send(response);
+      res.end();
+    } else {
+      return response;
+    }
   },
 
   genKeyPair: function (key, value) {
@@ -110,9 +100,15 @@ module.exports = {
     if (!values instanceof Array) {
       return null;
     }
-    var array = new Array;
-    for (var i = 0; i < values.length; i++) {
-      array.push(module.exports.genKeyPair(key, values[i]));
+    var array = [];
+    if (key != null) {
+      for (var i = 0; i < values.length; i++) {
+        array.push(module.exports.genKeyPair(key, values[i]));
+      }
+    } else {
+      for (var property in values) {
+        array.push(module.exports.genKeyPair(property, values[property]));
+      }
     }
     return array;
   }
