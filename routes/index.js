@@ -23,13 +23,13 @@ router.get("/", function(req, res) {
 
 /**
  * Gets all of the devices in the system, a separate call must be made to check if the robot is available
- * @return JSON Array of JSON objects with "deviceName" key and each robot name as a value
+ * @return JSON Array of JSON objects with "deviceNames" key and each robot name as a value
  */
 router.get("/devices", function(req, res) {
   utils.dateLog("GET access! /devices");
   serializer.startJson();
   var names = particle.getAllDeviceNames();
-  serializer.addJsonBlock(serializer.genKeyPairs("deviceName", names));
+  serializer.addJsonBlock(serializer.genKeyPairs("deviceNames", names));
   serializer.endJson(res);
 });
 
@@ -114,6 +114,11 @@ router.post("/move", function(req, res) {
       units = utils.isTurn(direction) ? "degrees" : "cm";
     }
     particle.particlePost(ID, direction, distance, units);
+    if (utils.isMove(direction)) {
+      locationData.robotShouldBeMoving();
+    } else if (utils.isStop(direction)) {
+      locationData.robotShouldBeStopped();
+    }
   } else {
     errorState(res);
     return;
@@ -131,7 +136,7 @@ router.post("/move", function(req, res) {
  * distance specified but no units it will assume "cm" or "degrees" as applicable. This may be mm, cm, m or degrees.
  * @return status code 200 if JSON body correct and request carried out, 500 otherwise.
  */
-router.post("/rotate", function(req, res) {
+router.post("/rotateToTarget", function(req, res) {
   utils.dateLog("POST request! /rotate");
   var deviceName = getDeviceName(req);
   if (deviceName == null) {
@@ -234,6 +239,35 @@ router.post("/reset", function(req, res) {
 
   particle.particlePost(ID, utils.OtherEndpointsEnum.RESET_FAILED);
   storage.setRobotAsAlive(name);
+  storage.storeEvent(name, "reset");
+
+  res.sendStatus(200);
+  res.end();
+});
+
+/**
+ * Sets a target location for the robot
+ * @param expects the header or post body to contain a "deviceName" for the device to get data from.
+ * @param expects the body to contain a "coordinates" populated with an "x" and "y" parameter for where the robot
+ *        should move in 2D space.
+ * @return status code 200 if JSON body correct and request carried out, 500 otherwise.
+ */
+router.post("/moveToTarget", function(req, res) {
+  utils.dateLog("POST Request! /moveToTarget");
+  var deviceName = getDeviceName(req);
+  var ID = getDeviceIDFromReq(req);
+  if (ID == null) {
+    errorState(res);
+    return;
+  }
+  var coordinates = utils.getParameter("coordinates", req.body);
+
+  if (coordinates != null && "x" in coordinates && "y" in coordinates) {
+    locationData.setTargetLocation(deviceName, coordinates);
+  } else {
+    errorState(res);
+    return;
+  }
 
   res.sendStatus(200);
   res.end();

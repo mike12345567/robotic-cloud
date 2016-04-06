@@ -161,7 +161,16 @@ module.exports = {
 
   isTurn: function(direction) {
     return direction == this.MovementEndpointsEnum.DIRECTION_TURN_RIGHT ||
-      direction ==  this.MovementEndpointsEnum.DIRECTION_TURN_RIGHT;
+        direction ==  this.MovementEndpointsEnum.DIRECTION_TURN_RIGHT;
+  },
+
+  isMove: function(direction) {
+    return this.isTurn(direction) || direction == this.MovementEndpointsEnum.DIRECTION_FORWARD ||
+        direction == this.MovementEndpointsEnum.DIRECTION_BACKWARD;
+  },
+
+  isStop: function(direction) {
+    return direction == this.MovementEndpointsEnum.DIRECTION_STOP;
   },
 
   getTrueDirection: function(passedIn) {

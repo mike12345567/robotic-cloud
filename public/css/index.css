@@ -44,12 +44,35 @@ h4 {
   margin-bottom: 15px;
 }
 
+.small-input {
+  width: 47px !important;
+  float: left !important;
+  margin-right: 5px !important;
+}
+
+.mid-input {
+  width: 81px !important;
+  float: left !important;
+  margin-right: 5px !important;
+}
+
+
+.small-span {
+  width: auto !important;
+}
+
 .left-div {
   text-align: center;
 }
 
 .btn {
   width: 300px;
+  margin: 5px 0;
+  padding: 10px;
+}
+
+.mid-btn {
+  width: 150px !important;
   margin: 5px 0;
   padding: 10px;
 }
@@ -75,7 +98,6 @@ h4 {
   clear: both;
   margin-bottom: 25px;
 }
-
 
 @media only screen
 and (min-device-width : 1000px)  {

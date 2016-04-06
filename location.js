@@ -84,6 +84,7 @@ function resetMovingData(deviceName) {
   obj.startMoveTimeMs = 0;
   obj.startRotation = 0;
   obj.turning = false;
+  obj.shouldBeMoving = false;
   robotMoveData[deviceName] = obj;
 }
 
@@ -106,7 +107,6 @@ function rotateRobotToTarget(deviceName) {
 
   switch (robotMovingData.moving) {
     case true:
-      robotMovingData.intervalId = setInterval(function() { stopRobotIfRequired(deviceName) }, moveTimeThresholdMs);
       /* stop rotation when in threshold */
       if (robotMovingData.startMoveTimeMs + moveTimeThresholdMs > new Date().getTime()) {
         return;
@@ -114,7 +114,7 @@ function rotateRobotToTarget(deviceName) {
 
       if (needsToStopRotate(currentRotation, targetRotation)) {
         particle.particlePost(ID, utils.MovementEndpointsEnum.DIRECTION_STOP);
-        robotMovingData.moving = false;
+        robotMovingData.shouldBeMoving = robotMovingData.moving = false;
         targetRotationMap[deviceName] = null;
       }
       break;
@@ -129,13 +129,13 @@ function rotateRobotToTarget(deviceName) {
       } else {
         particle.particlePost(ID, utils.MovementEndpointsEnum.DIRECTION_TURN_RIGHT);
       }
-      robotMovingData.moving = true;
+      robotMovingData.shouldBeMoving = robotMovingData.moving = true;
       robotMovingData.turning = true;
       robotMovingData.startRotation = currentRotation;
       robotMovingData.startMoveTimeMs = new Date().getTime();
       break;
     default:
-      robotMovingData.moving = false;
+      robotMovingData.shouldBeMoving = robotMovingData.moving = false;
       /* repeat function now that we have init this robot moving */
       rotateRobotToTarget(deviceName);
   }
@@ -149,17 +149,24 @@ function moveRobotToTarget(deviceName) {
 function stopRobotIfRequired(deviceName) {
  if (robotMoveData[deviceName].moving) {
    if (new Date().getTime() - lastUpdateTimeMs > noUpdateShutdownTimeMs) {
-     particle.particlePost(particle.getDeviceIDFromName(deviceName), utils.MovementEndpointsEnum.DIRECTION_STOP);
-     robotMoveData[deviceName].moving = false;
-     targetRotationMap[deviceName] = null;
+     stopRobot();
+   } else if (!robotMoveData[deviceName].shouldBeMoving && robotMoveData[deviceName].moving) {
+     stopRobot();
    }
- } else {
-   clearInterval(robotMoveData[deviceName].intervalId);
-   robotMoveData[deviceName].intervalId = null;
+ }
+ function stopRobot() {
+   particle.particlePost(particle.getDeviceIDFromName(deviceName), utils.MovementEndpointsEnum.DIRECTION_STOP);
+   robotMoveData[deviceName].moving = false;
+   targetRotationMap[deviceName] = null;
  }
 }
 
 module.exports = {
+  MoveStatusEnum: {
+    MOVING  : 1,
+    STOPPED : 0
+  },
+
   addNewLocationData: function (deviceName, location, rotation) {
     if ("x" in location && "y" in location) {
       latestLocationMap[deviceName] = location;
@@ -202,5 +209,37 @@ module.exports = {
     targetLocationMap[deviceName] = null;
     latestRotationMap[deviceName] = null;
     latestLocationMap[deviceName] = null;
+  },
+
+  moveStatus: function (deviceName, status) {
+    if (status == this.MoveStatusEnum.MOVING) {
+
+    } else if (status == this.MoveStatusEnum.STOPPED) {
+
+    }
+  },
+
+  robotShouldBeMoving: function (deviceName) {
+    initMovingData(deviceName);
+    robotMoveData[deviceName].shouldBeMoving = false;
+  },
+
+  robotShouldBeStopped: function (deviceName) {
+    initMovingData(deviceName);
+    robotMoveData[deviceName].shouldBeMoving = true;
+  },
+
+  devicesReady: function (deviceArray) {
+    for (var i = 0; i < deviceArray.length; i++) {
+      var deviceName = deviceArray[i].name;
+      initMovingData(deviceName);
+      var robotMovingData = robotMoveData[deviceName];
+      if ("intervalId" in robotMovingData) {
+        clearInterval(robotMovingData.intervalId);
+      }
+      if (particle.isRobotAvailable(deviceName)) {
+        robotMovingData.intervalId = setInterval(function() { stopRobotIfRequired(deviceName) }, moveTimeThresholdMs);
+      }
+    }
   }
 };

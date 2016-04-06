@@ -5,31 +5,23 @@ function addToJsonObject(arg) {
     return;
   }
   if ("attributes" in arg) {
-    var temp = {};
-    temp[arg.type] = arg.attributes;
-    obj.push(temp);
+    obj[arg.type] = arg.attributes;
   } else if ("value" in arg) {
-    var temp = {};
-    temp[arg.type] = arg.value;
-    obj.push(temp);
+    obj[arg.type] = arg.value;
   }
 }
 
 function addJsonBlock(key, block) {
-  var temp = {};
-  temp.type = key;
-  temp.attributes = block;
-  obj.push(temp);
+  obj[key] = block;
 }
 
 function addNoData() {
-  var temp = {status : "failed", reason : "NO DATA AVAILABLE"};
-  obj.push(temp);
+  obj["error"] = {status : "failed", reason : "NO DATA AVAILABLE"};
 }
 
 module.exports = {
   startJson: function() {
-    obj = [];
+    obj = {};
   },
 
   addJson: function() {
@@ -55,6 +47,7 @@ module.exports = {
     }
     var oneTypeSpecified = (type != null);
     var tempArray = [];
+    var finalObj;
     for (var idx in block) {
       if (type == null) {
         type = block[idx].type;
@@ -64,8 +57,14 @@ module.exports = {
       } else {
         tempArray.push(block[idx]);
       }
+      if (tempArray.length <= 1) {
+        finalObj = {};
+        finalObj = tempArray[0];
+      } else {
+        finalObj = tempArray;
+      }
     }
-    addJsonBlock(type, tempArray);
+    addJsonBlock(type, finalObj);
   },
 
   endJson: function(res) {
@@ -88,6 +87,9 @@ module.exports = {
         var pair = {"type" : key, "attributes" : {"value" : value.value, "timestamp" : value.timestamp}};
       } else {
         var pair = {"type": key, "attributes" : {"value": value.value}};
+      }
+      if ("rawTimestamp" in value) {
+        pair.attributes.rawTimestamp = value.rawTimestamp;
       }
     } else {
       pair = value;

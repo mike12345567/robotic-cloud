@@ -13,7 +13,7 @@
     <div class="wrapper">
         <div class="panel panel-default main-form">
             <div class="panel-heading">
-                <h3>Control Buttons</h3>
+                <h3>Robot Control Panel</h3>
                 <div class="dropdown">
                     <button class="btn btn-default dropdown-toggle" type="button" id="robotDropDown"
                             data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
@@ -28,10 +28,12 @@
                 <div class="left-div col-md-3">
                     <h4>Movement</h4>
                     <div id="movement-div">
-                        <button type="button" class="btn btn-success" id="forward-btn">Forward</button><br>
-                        <button type="button" class="btn btn-success" id="backward-btn">Backward</button><br>
-                        <button type="button" class="btn btn-success" id="left-turn-btn">Left Turn</button><br>
-                        <button type="button" class="btn btn-success" id="right-turn-btn">Right Turn</button><br>
+                        <button type="button" class="btn btn-success mid-btn" id="forward-btn">Forward</button>
+                        <button type="button" class="btn btn-success mid-btn" id="backward-btn">Backward</button><br>
+                        <button type="button" class="btn btn-success mid-btn" id="left-turn-btn">Left Turn</button>
+                        <button type="button" class="btn btn-success mid-btn" id="right-turn-btn">Right Turn</button><br>
+                        <button type="button" class="btn btn-success" id="location-btn">Go to location</button><br>
+                        <button type="button" class="btn btn-success" id="rotation-btn">Rotate to angle</button><br>
 
                         <h4 id="controls-h">Controls</h4>
                         <button type="button" class="btn btn-info" id="send-speed-btn">Send Speed</button><br>
@@ -46,12 +48,12 @@
                     <h4>Values</h4>
                     <div class="text-input-area">
                         <span>Distance:</span>
-                        <input type="text" class="form-control" id="distance-input">
+                        <input type="text" class="form-control" id="distance-input" placeholder="0">
                     </div>
 
                     <div class="text-input-area">
                         <span>Rotation:</span>
-                        <input type="text" class="form-control" id="rotation-input">
+                        <input type="text" class="form-control" id="rotation-input" placeholder="0">
                     </div>
 
                     <div class="text-input-area">
@@ -62,6 +64,19 @@
                             <option>cm</option>
                             <option>m</option>
                         </select>
+                    </div>
+
+                    <div class="text-input-area">
+                        <span>Location:</span>
+                        <span class="small-span">x:</span>
+                        <input type="text" class="form-control mid-input" id="target-x-input" placeholder="0">
+                        <span class="small-span">y:</span>
+                        <input type="text" class="form-control mid-input" id="target-y-input" placeholder="0">
+                    </div>
+
+                    <div class="text-input-area">
+                        <span>Target angle:</span>
+                        <input type="text" class="form-control" id="target-rotation-input" placeholder="0">
                     </div>
 
                     <h4>Joystick</h4>
@@ -131,13 +146,42 @@
                     </div>
 
                     <div class="text-input-area">
-                        <span>Gyro reading:</span>
-                        <input type="text" class="form-control" id="gyro-read-output">
+                        <span>Gyroscope:</span>
+                        <span class="small-span">x:</span>
+                        <input type="text" class="form-control small-input" id="gyro-x-output">
+                        <span class="small-span">y:</span>
+                        <input type="text" class="form-control small-input" id="gyro-y-output">
+                        <span class="small-span">z:</span>
+                        <input type="text" class="form-control small-input" id="gyro-z-output">
                     </div>
+
+                    <div class="text-input-area">
+                        <span>Acceleration:</span>
+                        <span class="small-span">x:</span>
+                        <input type="text" class="form-control small-input" id="accel-x-output">
+                        <span class="small-span">y:</span>
+                        <input type="text" class="form-control small-input" id="accel-y-output">
+                        <span class="small-span">z:</span>
+                        <input type="text" class="form-control small-input" id="accel-z-output">
+                    </div>
+
+                    <div class="text-input-area">
+                        <span>Location:</span>
+                        <span class="small-span">x:</span>
+                        <input type="text" class="form-control mid-input" id="current-x-output">
+                        <span class="small-span">y:</span>
+                        <input type="text" class="form-control mid-input" id="current-y-output">
+                    </div>
+
+                    <div class="text-input-area">
+                        <span>Angle:</span>
+                        <input type="text" class="form-control" id="current-rotation-output">
+                    </div>
+
 
                     <div class="text-output-area">
                         <label for="event-area">Events:</label>
-                        <textarea class="form-control" rows="20" id="event-area"></textarea>
+                        <textarea class="form-control" rows="16" id="event-area"></textarea>
                     </div>
                 </div>
             </div>

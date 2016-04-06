@@ -10,6 +10,7 @@ coap.parameters.maxRetransmit = 0;
 var URL = require("url");
 // Local IP, get from OS
 var os = require('os');
+var location;
 var ifaces = os.networkInterfaces();
 // local IP address
 var mcastServer;
@@ -66,7 +67,7 @@ setTimeout(queueOnInterval, 500);
 function queueOnInterval() {
   if (queue.length != 0) {
     var object = queue[0];
-    queue.splice(0);
+    queue.splice(0, 1);
     module.exports.particlePost(object.id, object.cmd, object.data);
   }
 
@@ -147,6 +148,10 @@ function handleRequest(data) {
       var temp = base64js.toByteArray(data.data);
       storage.storeLocalIP(name, temp);
       break;
+    case storage.EventEnum.MOVE_STATUS:
+      var temp = base64js.toByteArray(data.data);
+      
+      break;
     default:
       console.log("EVENT UNHANDLED! : " + data.name);
   }
@@ -161,6 +166,8 @@ function doneDeviceList (devices) {
   module.exports.deviceArray = devices.body;
   console.log("GOT DEVICES");
   module.exports.updateCalibrationValues("all");
+  if (location == null) location = require("./location.js");
+  location.devicesReady(devices.body);
 }
 function errorDeviceList (err) {
   console.log("FAILED TO GET DEVICES - " + err.description);
@@ -202,26 +209,28 @@ function postData(ID, string) {
 
 function localPostData(deviceName, data) {
   var localIP = storage.getLocalIP(deviceName);
-  var deviceID = module.exports.getDeviceIDFromName(deviceName);
+  var ID = module.exports.getDeviceIDFromName(deviceName);
 
   if (localIP == null || localIP == undefined || !module.exports.isRobotAvailable(deviceName)) {
-    module.exports.loadToQueue(deviceID, data);
-    return;
+    if (notConnectedQueue[ID] == null || notConnectedQueue[ID] == undefined) {
+      notConnectedQueue[ID] = [];
+    }
+    notConnectedQueue[ID][notConnectedQueue[ID].length] = data;
+  } else {
+    var url = URL.parse("coap://" + localIP + "/" + functionName);
+    url.port = COAP_PORT;
+    url.confirmable = true;
+    url.observable = false;
+    url.method = "POST";
+    var request = coap.request(url);
+
+    request.on("error", function(err) {
+      // No error as we cannot handle retransmission with IoT
+    });
+
+    request.write(data);
+    request.end();
   }
-
-  var url = URL.parse("coap://" + localIP + "/" + functionName);
-  url.port = COAP_PORT;
-  url.confirmable = true;
-  url.observable = false;
-  url.method = "POST";
-  var request = coap.request(url);
-
-  request.on("error", function(err) {
-    // No error as we cannot handle retransmission with IoT
-  });
-
-  request.write(data);
-  request.end();
 }
 
 module.exports = {

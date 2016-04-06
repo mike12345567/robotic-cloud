@@ -1,29 +1,15 @@
-var deviceID = "300032001147343339383037";
 var selectedDeviceName = "";
-var accessToken = "da837cbd013221af2cac61eea03e15d8459c49ea";
-var funcName = "makeMove";
-var rotationUnit = "degrees";
 var noSelected = "none";
 var waitForLift = false;
 var wasFail = false;
+var webSocketOpened = false;
 
-GyroReadingsEnum = {
-    GYRO_A_X : "gyroAX",
-    GYRO_A_Y : "gyroAY",
-    GYRO_A_Z : "gyroAZ",
-    GYRO_G_X : "gyroGX",
-    GYRO_G_Y : "gyroGY",
-    GYRO_G_Z : "gyroGZ"
-};
-
-EventEnum = {
-    COMPLETE : "complete",
-    CALIBRATION_VALUES : "calibrationValues",
-    ULTRASONIC_VALUES: "distanceCm",
-    STOPPED : "stopped",
-    FAILED : "failed",
-    HAS_FAILED : "hasFailed",
-    GYROSCOPE_READINGS : "gyroscopeReadings"
+EndpointsEnum = {
+    MOVE : "move",
+    CALIBRATE : "calibrate",
+    DEVICES : "devices",
+    EVENTS : "events",
+    CALIBRATION_VALUES : "calibrationValues"
 };
 
 MotorDirectionEnum = {
@@ -33,16 +19,18 @@ MotorDirectionEnum = {
 };
 
 ButtonEnum = {
-    FORWARD : {cmd: "forward", btnName: "forward-btn"},
-    BACKWARD : {cmd: "backward", btnName: "backward-btn"},
-    TURN_LEFT : {cmd: "turnLeft", btnName: "left-turn-btn"},
-    TURN_RIGHT : {cmd: "turnRight", btnName: "right-turn-btn"},
+    FORWARD : {cmd: "forward", btnName: "forward-btn", input: ["distance-input", "unit-input"]},
+    BACKWARD : {cmd: "backward", btnName: "backward-btn", input: ["distance-input", "unit-input"]},
+    TURN_LEFT : {cmd: "turnLeft", btnName: "left-turn-btn", input: "rotation-input"},
+    TURN_RIGHT : {cmd: "turnRight", btnName: "right-turn-btn", input: "rotation-input"},
     STOP : {cmd: "stop", btnName: "stop-btn"},
-    SEND_SPEED : {cmd: "setSpeed", btnName: "send-speed-btn"},
-    CAL_TURNING : {cmd: "calibrateTurning", btnName: "cal-turning-btn"},
-    CAL_WHEELS : {cmd: "calibrateSpeed", btnName: "cal-wheels-btn"},
-    CAL_FRICTION : {cmd: "calibrateFriction", btnName: "cal-friction-btn"},
-    RESET_FAIL : {cmd: "resetFailed", btnName: "cal-reset-fail-btn"}
+    SEND_SPEED : {cmd: "speed", btnName: "send-speed-btn", input: "speed-input"},
+    CAL_TURNING : {cmd: "turning", btnName: "cal-turning-btn", input: "turning-cal-input"},
+    CAL_WHEELS : {cmd: "wheelSpeed", btnName: "cal-wheels-btn", input: ["left-wheel-input", "right-wheel-input"]},
+    CAL_FRICTION : {cmd: "friction", btnName: "cal-friction-btn", input: "friction-input"},
+    RESET_FAIL : {cmd: "reset", btnName: "cal-reset-fail-btn"},
+    TARGET_LOCATION : {cmd: "moveToTarget", btnName: "location-btn"},
+    TARGET_ROTATION : {cmd: "rotateToTarget", btnName: "rotation-btn"}
 };
 
 JoystickEnum = {
@@ -62,133 +50,160 @@ InputEnum = {
     CAL_TURNING : "turning-cal-input",
     CAL_FRICTION : "friction-input",
     DIST_FRONT : "dist-front-output",
-    GYRO_READ : "gyro-read-output",
     EVENTS : "event-area",
     CAL_DIR_LEFT: "left-direction-input",
-    CAL_DIR_RIGHT: "right-direction-input"
+    CAL_DIR_RIGHT: "right-direction-input",
+    TARGET_LOCATION_X: "target-x-input",
+    TARGET_LOCATION_Y: "target-y-input",
+    CURRENT_LOCATION_X: "current-x-output",
+    CURRENT_LOCATION_Y: "current-y-output",
+    TARGET_ROTATION: "target-rotation-input",
+    CURRENT_ROTATION: "current-rotation-output"
 };
 
+var gyroOutputMap = {gyroGX: "gyro-x-output", gyroGY: "gyro-y-output", gyroGZ: "gyro-z-output",
+                     gyroAX: "accel-x-output", gyroAY: "accel-y-output", gyroAZ: "accel-z-output"};
+
+
+/*************************
+ * CLOUD COMMS FUNCTIONS *
+ *************************/
+function getFromCloud(url, callback, noDeviceName) {
+    if (selectedDeviceName && !noDeviceName) {
+        $.ajax({
+            method: "GET",
+            url: "http://localhost:3000/" + url,
+            headers: {deviceName: selectedDeviceName},
+            contentType: "application/json",
+            dataType: "json"
+        }).done(function (data) {callback(data)});
+    } else {
+        $.ajax({
+            method: "GET",
+            url: "http://localhost:3000/" + url,
+            contentType: "application/json",
+            dataType: "json"
+        }).done(function (data) {callback(data)});
+    }
+}
+
+function postToCloud(url, data, callback, noDeviceName) {
+    if ((typeof data) == "object") {
+        data = JSON.stringify(data);
+    }
+    if (selectedDeviceName && !noDeviceName) {
+        $.ajax({
+            method: "POST",
+            url: "http://localhost:3000/" + url,
+            headers: {deviceName: selectedDeviceName},
+            contentType: "application/json",
+            data: data,
+            dataType: "json"
+        }).done(function (data) { if (callback != null) callback(data)});
+    } else {
+        $.ajax({
+            method: "POST",
+            url: "http://localhost:3000/" + url,
+            contentType: "application/json",
+            data: data,
+            dataType: "json"
+        }).done(function (data) { if (callback != null) callback(data)});
+    }
+}
+
+/*************************
+ * MAIN STARTUP FUNCTION *
+ *************************/
 $(document).ready(function() {
-    spark.login({accessToken: accessToken});
-    spark.getEventStream(false, deviceID, function(data) {
-        switch (data.name) {
-            case EventEnum.COMPLETE:
-                changeButtons(false);
-                outputEvent(EventEnum.COMPLETE);
-                break;
-            case EventEnum.STOPPED:
-                changeButtons(false);
-                outputEvent(EventEnum.STOPPED);
-                break;
-            case EventEnum.FAILED:
-                wasFail = true;
-                changeButtons(true);
-                outputEvent(EventEnum.FAILED);
-                break;
-            case EventEnum.HAS_FAILED:
-                wasFail = true;
-                changeButtons(true);
-                outputEvent(EventEnum.HAS_FAILED);
-                break;
-            case EventEnum.CALIBRATION_VALUES:
-                var array = base64js.toByteArray(data.data);
-                outputCalibration(array);
-                break;
-            case EventEnum.ULTRASONIC_VALUES:
-                var array = base64js.toByteArray(data.data);
-                outputDistances(array);
-                break;
-            case EventEnum.GYROSCOPE_READINGS:
-                var array = base64js.toByteArray(data.data);
-                outputGyroReadings(array);
-                break;
-        }
-    });
-
-    setTimeout(getCalibrationValues, 1000);
-
     for (var btnEnumStr in ButtonEnum) {
-        var button = ButtonEnum[btnEnumStr];
-        $("#" + button.btnName).click(function(event) {
-            var name = event.target.id;
-
-            if (name == ButtonEnum.SEND_SPEED.btnName &&
-              getInput(InputEnum.SPEED) != null) {
-                particleCall(getCmd(name), getInput(InputEnum.SPEED));
-            }
-
-            if (name == ButtonEnum.FORWARD.btnName ||
-              name == ButtonEnum.BACKWARD.btnName) {
-                var unit = getInput(InputEnum.UNIT);
-                var distance = getInput(InputEnum.DISTANCE);
-                if ((unit == null && distance != null) ||
-                  (unit != null && distance == null)) return;
-                particleCall(getCmd(name), distance, unit);
-                changeButtons(true);
-            }
-
-            if (name == ButtonEnum.TURN_LEFT.btnName ||
-              name == ButtonEnum.TURN_RIGHT.btnName) {
-                var rotation = getInput(InputEnum.ROTATION);
-                if (rotation == null) return;
-                particleCall(getCmd(name), rotation, rotationUnit);
-                changeButtons(true);
-            }
-
-            if (name == ButtonEnum.CAL_WHEELS.btnName) {
-                var rightWheel = getInput(InputEnum.CAL_RIGHT_WHEEL);
-                var leftWheel = getInput(InputEnum.CAL_LEFT_WHEEL);
-                if (rightWheel == null || leftWheel == null) return;
-                particleCall(getCmd(name), leftWheel, rightWheel);
-            }
-
-            if (name == ButtonEnum.CAL_TURNING.btnName) {
-                particleCall(getCmd(name), getInput(InputEnum.CAL_TURNING));
-            }
-
-            if (name == ButtonEnum.CAL_FRICTION.btnName){
-                particleCall(getCmd(name), getInput(InputEnum.CAL_FRICTION));
-            }
-
-            if (name == ButtonEnum.STOP.btnName) {
-                particleCall(getCmd(name));
-                changeButtons(false);
-            }
-
-            if (name == ButtonEnum.RESET_FAIL.btnName) {
-                particleCall(getCmd(name));
-                changeButtons(false);
-            }
-        });
+        var buttonOpt = ButtonEnum[btnEnumStr];
+        (function (buttonOpt) {
+            $("#" + buttonOpt.btnName).click(function (event) {
+                var name = event.target.id;
+                var values = [];
+                if (buttonOpt.input instanceof Array) {
+                    for (var property in buttonOpt.input) {
+                        if (buttonOpt.input.hasOwnProperty(property)) {
+                            values.push(getInput(buttonOpt.input[property]));
+                        }
+                    }
+                } else {
+                    values.push(getInput(buttonOpt.input));
+                }
+                switch (name) {
+                    case ButtonEnum.SEND_SPEED.btnName:
+                    case ButtonEnum.CAL_TURNING.btnName:
+                    case ButtonEnum.CAL_FRICTION.btnName:
+                        if (values.length != 1) return;
+                        sendCalibration(getCmd(name), values[0]);
+                        break;
+                    case ButtonEnum.FORWARD.btnName:
+                    case ButtonEnum.BACKWARD.btnName:
+                    case ButtonEnum.TURN_LEFT.btnName:
+                    case ButtonEnum.TURN_RIGHT.btnName:
+                        makeMove(getCmd(name), values[0], values[1]);
+                        changeButtons(true);
+                        break;
+                    case ButtonEnum.CAL_WHEELS.btnName:
+                        if (values.length != 2) return;
+                        sendCalibration(getCmd(name), values[0], values[1]);
+                        break;
+                    case ButtonEnum.STOP.btnName:
+                        makeMove(getCmd(name));
+                        changeButtons(false);
+                        break;
+                    case ButtonEnum.RESET_FAIL.btnName:
+                        postToCloud(getCmd(name), "");
+                        changeButtons(false);
+                        break;
+                    case ButtonEnum.TARGET_ROTATION.btnName:
+                        var rotateObj = {degrees: getInput(InputEnum.TARGET_ROTATION)};
+                        if (!isNaN(rotateObj.degrees)) {
+                            postToCloud(getCmd(name), rotateObj);
+                        }
+                        break;
+                    case ButtonEnum.TARGET_LOCATION.btnName:
+                        var locationObj = {coordinates: {
+                            x: getInput(InputEnum.TARGET_LOCATION_X),
+                            y: getInput(InputEnum.TARGET_LOCATION_Y)}};
+                        if (!isNaN(locationObj.coordinates.x) && !isNaN(locationObj.coordinates.y)) {
+                            postToCloud(getCmd(name), locationObj);
+                        }
+                        break;
+                }
+            });
+        })(buttonOpt);
     }
 
     for (var joyEnumStr in JoystickEnum) {
         var button = JoystickEnum[joyEnumStr];
         $("#" + button.btnName).mousedown(function() {
             var name = event.target.id;
-            particleCall(getCmd(name));
+            makeMove(getCmd(name));
             waitForLift = true;
         });
         $("#" + button.btnName).mouseup(function() {
             if (waitForLift) {
-                particleCall("stop");
+                makeMove("stop");
                 waitForLift = false;
             }
         });
     }
 
 
-    $.get("http://localhost:3000/devices", function( data ) {
-        for (var i = 0; i < data.attributes.length; i++) {
-            $("#robotDropDownList").append("<li class=\"element\"><a href=\"#\">" + data.attributes[i].value + "</a></li>");
+    getFromCloud("devices", function(data) {
+        if ("deviceNames" in data) {
+            for (var name in data.deviceNames) {
+                $("#robotDropDownList").append("<li class=\"element\"><a href=\"#\">" + data.deviceNames[name].value + "</a></li>");
+            }
+            $(".dropdown-menu li a").click(function () {
+                var dropdown = $("#robotDropDown:first-child");
+                dropdown.text($(this).text());
+                dropdown.val($(this).text());
+                selectedDeviceName = $(this).text();
+                newDeviceSelected();
+            });
         }
-        $(".dropdown-menu li a").click(function(){
-            var dropdown = $("#robotDropDown:first-child");
-            dropdown.text($(this).text());
-            dropdown.val($(this).text());
-            selectedDeviceName = $(this).text();
-            openWebSocket();
-        });
     });
 
     $("#left-direction-input").change(function() {
@@ -200,7 +215,28 @@ $(document).ready(function() {
     });
 });
 
+/******************
+ * INIT FUNCTIONS *
+ ******************/
+function newDeviceSelected() {
+    /* remove the set historical events */
+    $("#" + InputEnum.EVENTS).val("");
+    changeButtons(false);
+
+    getFromCloud(EndpointsEnum.CALIBRATION_VALUES, function (data){
+        outputCalibration(data);
+    });
+
+    getFromCloud(EndpointsEnum.EVENTS, function (data) {
+        outputEvent(data);
+    });
+
+    openWebSocket();
+}
+
 function openWebSocket() {
+    if (webSocketOpened) return;
+    webSocketOpened = true;
     window.WebSocket = window.WebSocket || window.MozWebSocket;
 
     var connection = new WebSocket('ws://localhost:4201');
@@ -216,58 +252,175 @@ function openWebSocket() {
     connection.onmessage = function (message) {
         try {
             var json = JSON.parse(message.data);
-
+            if ("distance" in json) {
+                outputDistances(json.distance);
+            } else if ("gyroReading" in json) {
+                outputGyroReadings(json.gyroReading);
+            } else if ("event" in json) {
+                outputEvent(json.event);
+            } else if ("location" in json) {
+                outputLocation(json.location);
+            } else if ("rotation" in json) {
+                outputRotation(json.rotation);
+            }
         } catch (e) {
             console.log('This doesn\'t look like a valid JSON: ', message.data);
-            return;
         }
     };
 }
 
+/*****************************
+ * HIGH LEVEL POST FUNCTIONS *
+ *****************************/
+function makeMove(direction, distance, unit) {
+    var moveObj = {direction: direction};
+    if (distance != null) {
+        if (direction == ButtonEnum.TURN_LEFT || direction == ButtonEnum.TURN_RIGHT) {
+            moveObj.degrees = distance;
+        } else {
+            moveObj.distance = distance;
+            moveObj.unit = unit;
+        }
+    }
+    postToCloud(EndpointsEnum.MOVE, moveObj);
+}
+
+function sendCalibration(property, value, valueTwo) {
+    var calibrationObj = {};
+    if (valueTwo == null) {
+        calibrationObj[property] = value;
+    } else {
+        calibrationObj[property] = {left : value, right : valueTwo};
+    }
+    postToCloud(EndpointsEnum.CALIBRATE, calibrationObj);
+}
+
 function sendUpdatedDirection() {
-    var directionLeft = getInput(InputEnum.CAL_DIR_LEFT);
-    var directionRight = getInput(InputEnum.CAL_DIR_RIGHT);
+    var postObj = {};
+    postObj.directionLeft = getInput(InputEnum.CAL_DIR_LEFT);
+    postObj.directionRight = getInput(InputEnum.CAL_DIR_RIGHT);
 
-    particleCall("calibrateDirection", directionLeft, directionRight);
+    postToCloud(EndpointsEnum.CALIBRATE, postObj);
 }
 
-function outputEvent(eventName) {
-    var date = new Date();
-    var time = date.getTime();
-    $("#" + InputEnum.EVENTS).append(eventName + " event at:" + time.toString() + "\n");
+/********************
+ * OUTPUT FUNCTIONS *
+ ********************/
+function outputEventFromName(eventName, timestamp) {
+    if (eventName == "failed" || eventName == "hasFailed") {
+        wasFail = true;
+        changeButtons(true);
+    } else if (eventName == "reset") {
+        changeButtons(false);
+        wasFail = false;
+    }
+    var textArea = $("#" + InputEnum.EVENTS);
+    textArea.val(textArea.val() + eventName + " at: " + timestamp + "\n");
 }
 
-function outputCalibration(array) {
-    setInput(InputEnum.SPEED, array[0] | (array[1] << 8));
-    setInput(InputEnum.CAL_RIGHT_WHEEL, array[2] | (array[3] << 8));
-    setInput(InputEnum.CAL_LEFT_WHEEL, array[4] | (array[5] << 8));
-    setInput(InputEnum.CAL_TURNING, array[6] | (array[7] << 8));
-    setInput(InputEnum.CAL_FRICTION, array[8] | (array[9] << 8));
+function outputEvent(event) {
+    var array = [];
+    for (var property in event) {
+        /* special case for web socket events */
+        if (property == "type") {
+            outputEventFromName(event.type, event.attributes.timestamp);
+            return;
+        }
+        if (event.hasOwnProperty(property)) {
+            if (event[property] instanceof Array) {
+                for (var element in event[property]) {
+                    if (event[property].hasOwnProperty(element)) {
+                        event[property][element].type = property;
+                        array.push(event[property][element]);
+                    }
+                }
+            } else {
+                event[property].type = property;
+                array.push(event[property]);
+            }
+        }
+    }
+    array.sort(function(a,b) {
+        return a.rawTimestamp - b.rawTimestamp;
+    });
+    for (var element in array) {
+        if (array.hasOwnProperty(element)) {
+            outputEventFromName(array[element].type, array[element].timestamp);
+        }
+    }
 }
 
-function outputDistances(array){
-    var value = array[0] | (array[1] << 8);
-    setInput(InputEnum.DIST_FRONT, value.toString() + "cm");
+function outputCalibration(data) {
+    for (var property in data) {
+        if (data.hasOwnProperty(property)) {
+            switch (property) {
+                case "speed":
+                    setInput(InputEnum.SPEED, data.speed.value);
+                    break;
+                case "rightWheel":
+                    setInput(InputEnum.CAL_RIGHT_WHEEL, data.rightWheel.value);
+                    break;
+                case "leftWheel":
+                    setInput(InputEnum.CAL_LEFT_WHEEL, data.leftWheel.value);
+                    break;
+                case "turning":
+                    setInput(InputEnum.CAL_TURNING, data.turning.value);
+                    break;
+                case "friction":
+                    setInput(InputEnum.CAL_FRICTION, data.friction.value);
+                    break;
+                case "directionLeft":
+                    setInput(InputEnum.CAL_DIR_LEFT, data.directionLeft.value);
+                    break;
+                case "directionRight":
+                    setInput(InputEnum.CAL_DIR_RIGHT, data.directionRight.value);
+                    break;
+            }
+        }
+    }
+}
+
+function outputDistances(json) {
+    if (!(json instanceof Array)) {
+        setInput(InputEnum.DIST_FRONT, json.attributes.value + "cm");
+    } else {
+        throw "Not implemented currently!";
+    }
+}
+
+function outputLocation(json) {
+    if (!(json instanceof Array)) {
+        setInput(InputEnum.CURRENT_LOCATION_X, json.coordinates.x);
+        setInput(InputEnum.CURRENT_LOCATION_Y, json.coordinates.y);
+    } else {
+        throw "Not implemented currently!";
+    }
+}
+
+function outputRotation(json) {
+    if (!(json instanceof Array)) {
+        setInput(InputEnum.CURRENT_ROTATION, json.rotation);
+    } else {
+        throw "Not implemented currently!";
+    }
 }
 
 function outputGyroReadings(json) {
-    var output = "";
-    for (var property in GyroReadingsEnum) {
-        var enumeration = GyroReadingsEnum[property];
-        var value = json[enumeration].attributes.value;
-        output = output.concat(enumeration + ": ");
+    if (json instanceof Array) {
+        for (var property in json) {
+            if (json.hasOwnProperty(property)) {
+                var type = json[property].type;
+                setInput(gyroOutputMap[type], json[property].attributes.value);
+            }
+        }
+    } else {
+        throw "Not all data available!";
     }
-    var ax = json[GyroReadingsEnum.GYRO_A_X].attributes.value;
-    var xy = json[GyroReadingsEnum.GYRO_A_Y].attributes.value;
-    var output = "ax: " +  + ", ay: " + ay.toString() + ", az: " + az.toString() +
-      ", gx: " + gx.toString() + ", gy: " + gy.toString() + ", gz: " + gz.toString();
-    setInput(InputEnum.GYRO_READ, output);
 }
 
-function getCalibrationValues() {
-    particleCall("sendCalibration");
-}
-
+/*********************
+ * UTILITY FUNCTIONS *
+ *********************/
 function getCmd(btnName) {
     for (var btnEnumStr in ButtonEnum) {
         var button = ButtonEnum[btnEnumStr];
@@ -300,23 +453,6 @@ function changeButtons(disabled) {
         $("#" + button.btnName).prop('disabled', disabled);
     }
     wasFail = false;
-}
-
-function particleCall(cmd, parameters) {
-    var data;
-    if (particleCall.length == 1 && cmd != null) {
-        data = cmd;
-    } else {
-        data = cmd;
-        for (var arg = 1; arg < arguments.length; arg++) {
-            if (arguments[arg] == null) continue;
-            data += "," + arguments[arg];
-        }
-    }
-    $.post("https://api.particle.io/v1/devices/"+deviceID+"/"+funcName, {arg: data, access_token: accessToken})
-      .done(function(data) {
-
-      });
 }
 
 function getInput(inputName) {

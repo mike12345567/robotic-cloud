@@ -19,6 +19,7 @@ server.on("connection", function (socket) {
   });
 
   socket.on('close', function(code, message) {
+    if (socketMap[deviceName] == null) return;
     var index = socketMap[deviceName].indexOf(socket);
     if (index >= 0) {
       socketMap[deviceName].splice(index, 1);
@@ -30,13 +31,13 @@ function updateClient(deviceName, socket) {
   for (var property in module.exports.WebSocketUpdateEnum) {
     var enumeration = module.exports.WebSocketUpdateEnum[property];
     // don't find the latest event, client will pull down all events
-    if (enumeration != module.exports.WebSocketUpdateEnum.EVENTS) {
+    if (enumeration != module.exports.WebSocketUpdateEnum.EVENT) {
       module.exports.needsUpdated(deviceName, enumeration, socket);
     }
   }
 }
 
-function getDataFromStorage(deviceName, key, timestamp) {
+function getDataFromStorage(deviceName, key) {
   switch (key) {
     case module.exports.WebSocketUpdateEnum.DISTANCE:
       return storage.getLatestDistance(deviceName);
@@ -46,7 +47,7 @@ function getDataFromStorage(deviceName, key, timestamp) {
       return storage.getLatestLocation(deviceName);
     case module.exports.WebSocketUpdateEnum.ROTATION:
       return storage.getLatestRotation(deviceName);
-    case module.exports.WebSocketUpdateEnum.EVENTS:
+    case module.exports.WebSocketUpdateEnum.EVENT:
       return storage.getLatestEvent(deviceName);
   }
   return null;
@@ -56,7 +57,7 @@ module.exports = {
   WebSocketUpdateEnum: {
     DISTANCE : "distance",
     GYRO_READING : "gyroReading",
-    EVENTS : "events",
+    EVENT : "event",
     LOCATION : "location",
     ROTATION : "rotation"
   },
@@ -71,7 +72,7 @@ module.exports = {
       return;
     }
 
-    var value = getDataFromStorage(deviceName, key, new Date().getTime());
+    var value = getDataFromStorage(deviceName, key);
     if (value == null) {
       return;
     }

@@ -8,6 +8,7 @@ setTimeout(function() {
 
 var distanceMap = [];
 var eventMap = [];
+var latestEventType;
 var calibrationMap = [];
 var gyroReadingsMap = [];
 var deadRobotsMap = [];
@@ -46,7 +47,8 @@ module.exports = {
     STATUS              : "spark/status",
     FAILED              : "failed",
     HAS_FAILED          : "hasFailed",
-    LOCAL_IP            : "localIP"
+    LOCAL_IP            : "localIP",
+    MOVE_STATUS         : "moveStatus" // NOT PUSHED OUT OF API
   },
 
   setRobotAsDead: function (deviceName) {
@@ -76,7 +78,8 @@ module.exports = {
     var date = new Date();
     var time = date.getTime();
     addToMap(deviceName, eventMap, eventName, eventName + " event at:" + time.toString());
-    websocket.needsUpdated(deviceName, websocket.WebSocketUpdateEnum.EVENTS);
+    latestEventType = eventName;
+    websocket.needsUpdated(deviceName, websocket.WebSocketUpdateEnum.EVENT);
   },
 
   storeCalibration: function (deviceName, array) {
@@ -151,13 +154,10 @@ module.exports = {
         }
       }
     }
-    array.sort(function (a, b) {
-      return a.rawTimestamp - b.rawTimestamp;
-    });
   },
 
   getLatestEvent: function (deviceName) {
-    return getLatestDataFromMap(deviceName, eventMap);
+    return getLatestDataFromMapByKey(deviceName, eventMap, latestEventType);
   },
 
   getAllCalibration: function (deviceName) {
@@ -183,6 +183,13 @@ function getLatestDataFromMap(deviceName, map) {
   for (var key in map[deviceName]) {
     array[key] = map[deviceName][key][map[deviceName][key].length-1];
   }
+  return array;
+}
+
+function getLatestDataFromMapByKey(deviceName, map, key) {
+  var array = [];
+
+  array[key] = map[deviceName][key][map[deviceName][key].length-1];
   return array;
 }
 
