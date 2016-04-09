@@ -1,6 +1,7 @@
 var particle = require("./particle-calls.js");
 var utils = require("./utils.js");
 var websocket = require("./websocket.js");
+var storage = require("./storage.js");
 
 /* Interval data */
 var noUpdateShutdownTimeMs = 3000;
@@ -94,7 +95,7 @@ function needsToStopRotate(currentRotation, targetRotation) {
   return angle < differenceToStopRotation;
 }
 
-function rotateRobotToTarget(deviceName) {
+function rotateRobotToTarget(deviceName, completion) {
   initMovingData(deviceName);
   var robotMovingData = robotMoveData[deviceName];
   var currentRotation = latestRotationMap[deviceName];
@@ -113,9 +114,7 @@ function rotateRobotToTarget(deviceName) {
       }
 
       if (needsToStopRotate(currentRotation, targetRotation)) {
-        particle.particlePost(ID, utils.MovementEndpointsEnum.DIRECTION_STOP);
-        robotMovingData.shouldBeMoving = robotMovingData.moving = false;
-        targetRotationMap[deviceName] = null;
+        stopRobot(deviceName, completion);
       }
       break;
     case false:
@@ -146,18 +145,22 @@ function moveRobotToTarget(deviceName) {
 
 }
 
+function stopRobot(deviceName, completion) {
+  particle.particlePost(ID, utils.MovementEndpointsEnum.DIRECTION_STOP);
+  robotMoveData[deviceName].shouldBeMoving = robotMoveData[deviceName].moving = false;
+  targetRotationMap[deviceName] = null;
+  if (completion != null) {
+    setTimeout(completion, moveTimeThresholdMs);
+  }
+}
+
 function stopRobotIfRequired(deviceName) {
  if (robotMoveData[deviceName].moving) {
    if (new Date().getTime() - lastUpdateTimeMs > noUpdateShutdownTimeMs) {
-     stopRobot();
+     stopRobot(deviceName);
    } else if (!robotMoveData[deviceName].shouldBeMoving && robotMoveData[deviceName].moving) {
-     stopRobot();
+     stopRobot(deviceName);
    }
- }
- function stopRobot() {
-   particle.particlePost(particle.getDeviceIDFromName(deviceName), utils.MovementEndpointsEnum.DIRECTION_STOP);
-   robotMoveData[deviceName].moving = false;
-   targetRotationMap[deviceName] = null;
  }
 }
 
@@ -174,8 +177,11 @@ module.exports = {
       testForHistoricalUpdate({deviceName:deviceName, location:location, rotation:rotation});
     }
     lastUpdateTimeMs = new Date().getTime();
-    rotateRobotToTarget(deviceName);
+    rotateRobotToTarget(deviceName, function() {
+      storage.storeEvent(deviceName, storage.EventEnum.COMPLETE);
+    });
     websocket.needsUpdated(deviceName, websocket.WebSocketUpdateEnum.LOCATION);
+    websocket.needsUpdated(deviceName, websocket.WebSocketUpdateEnum.ROTATION);
   },
 
   getCurrentLocation: function (deviceName) {

@@ -46,7 +46,7 @@ function getDataFromStorage(deviceName, key) {
     case module.exports.WebSocketUpdateEnum.LOCATION:
       return storage.getLatestLocation(deviceName);
     case module.exports.WebSocketUpdateEnum.ROTATION:
-      return storage.getLatestRotation(deviceName);
+      return {"value": storage.getLatestRotation(deviceName)};
     case module.exports.WebSocketUpdateEnum.EVENT:
       return storage.getLatestEvent(deviceName);
   }
@@ -79,6 +79,7 @@ module.exports = {
     serializer.startJson();
     serializer.addJsonBlock(serializer.genKeyPairs(null, value), key);
     var string = serializer.endJson();
+    if (string == JSON.stringify({})) return;
     if (socket == null) {
       for (var i = 0; i < socketMap[deviceName].length; i++) {
         socketMap[deviceName][i].send(string);

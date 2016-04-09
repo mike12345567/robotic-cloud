@@ -320,11 +320,13 @@ module.exports = {
     return "";
   },
 
-  getAllDeviceNames: function getAllDeviceNames() {
+  getAllDeviceData: function getAllDeviceNames() {
     var array = [];
     var deviceArray = module.exports.deviceArray;
+    if (deviceArray == null) return;
     for (var i = 0; i < deviceArray.length; i++) {
-      var obj = {type: "deviceName", value: deviceArray[i].name};
+      var online = this.isRobotAvailable(deviceArray[i].name);
+      var obj = {attributes: {deviceName: deviceArray[i].name, id: deviceArray[i].id, online: online}};
       array.push(obj);
     }
     return array;

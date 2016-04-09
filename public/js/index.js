@@ -1,8 +1,13 @@
 var selectedDeviceName = "";
+var devices = [];
 var noSelected = "none";
 var waitForLift = false;
 var wasFail = false;
 var webSocketOpened = false;
+var isMoving = false;
+var normaliseAgain = true;
+var greenCircle = "<div class=\"green-circle\"></div>";
+var redCircle = "<div class=\"red-circle\"></div>";
 
 EndpointsEnum = {
     MOVE : "move",
@@ -61,9 +66,8 @@ InputEnum = {
     CURRENT_ROTATION: "current-rotation-output"
 };
 
-var gyroOutputMap = {gyroGX: "gyro-x-output", gyroGY: "gyro-y-output", gyroGZ: "gyro-z-output",
-                     gyroAX: "accel-x-output", gyroAY: "accel-y-output", gyroAZ: "accel-z-output"};
-
+var gyroOutputMap = {gyroAX: {output: "accel-x-output"}, gyroAY: {output: "accel-y-output"}, gyroAZ: {output: "accel-z-output"},
+                     gyroGX: {output: "gyro-x-output"}, gyroGY: {output: "gyro-y-output"}, gyroGZ: {output: "gyro-z-output"}};
 
 /*************************
  * CLOUD COMMS FUNCTIONS *
@@ -115,6 +119,12 @@ function postToCloud(url, data, callback, noDeviceName) {
  * MAIN STARTUP FUNCTION *
  *************************/
 $(document).ready(function() {
+    for (var property in gyroOutputMap) {
+        if (gyroOutputMap.hasOwnProperty(property)) {
+            gyroOutputMap[property].normlisation = 0;
+        }
+    }
+
     for (var btnEnumStr in ButtonEnum) {
         var buttonOpt = ButtonEnum[btnEnumStr];
         (function (buttonOpt) {
@@ -150,6 +160,7 @@ $(document).ready(function() {
                         break;
                     case ButtonEnum.STOP.btnName:
                         makeMove(getCmd(name));
+                        normaliseAgain = true;
                         changeButtons(false);
                         break;
                     case ButtonEnum.RESET_FAIL.btnName:
@@ -161,6 +172,7 @@ $(document).ready(function() {
                         if (!isNaN(rotateObj.degrees)) {
                             postToCloud(getCmd(name), rotateObj);
                         }
+                      changeButtons(true);
                         break;
                     case ButtonEnum.TARGET_LOCATION.btnName:
                         var locationObj = {coordinates: {
@@ -169,6 +181,7 @@ $(document).ready(function() {
                         if (!isNaN(locationObj.coordinates.x) && !isNaN(locationObj.coordinates.y)) {
                             postToCloud(getCmd(name), locationObj);
                         }
+                      changeButtons(true);
                         break;
                 }
             });
@@ -176,35 +189,27 @@ $(document).ready(function() {
     }
 
     for (var joyEnumStr in JoystickEnum) {
-        var button = JoystickEnum[joyEnumStr];
-        $("#" + button.btnName).mousedown(function() {
-            var name = event.target.id;
-            makeMove(getCmd(name));
-            waitForLift = true;
-        });
-        $("#" + button.btnName).mouseup(function() {
-            if (waitForLift) {
-                makeMove("stop");
-                waitForLift = false;
-            }
-        });
+        if (JoystickEnum.hasOwnProperty(joyEnumStr)) {
+            var button = JoystickEnum[joyEnumStr];
+            var selector = $("#" + button.btnName);
+            selector.mousedown(function () {
+                var name = event.target.id;
+                makeMove(getCmd(name));
+                waitForLift = true;
+            });
+            selector.mouseup(function () {
+                if (waitForLift) {
+                    makeMove("stop");
+                    waitForLift = false;
+                }
+            });
+        } else {
+            throw "JoystickEnum is not Init'd correctly";
+        }
     }
 
-
-    getFromCloud("devices", function(data) {
-        if ("deviceNames" in data) {
-            for (var name in data.deviceNames) {
-                $("#robotDropDownList").append("<li class=\"element\"><a href=\"#\">" + data.deviceNames[name].value + "</a></li>");
-            }
-            $(".dropdown-menu li a").click(function () {
-                var dropdown = $("#robotDropDown:first-child");
-                dropdown.text($(this).text());
-                dropdown.val($(this).text());
-                selectedDeviceName = $(this).text();
-                newDeviceSelected();
-            });
-        }
-    });
+    refreshDevices();
+    setInterval(refreshDevices, 20000);
 
     $("#left-direction-input").change(function() {
         sendUpdatedDirection();
@@ -218,6 +223,37 @@ $(document).ready(function() {
 /******************
  * INIT FUNCTIONS *
  ******************/
+function refreshDevices() {
+    getFromCloud("devices", function(data) {
+        if ("devices" in data) {
+            var dropdown = $("#robotDropDownList");
+            dropdown.empty();
+            for (var element in data.devices) {
+                var value = data.devices[element];
+                var circle = value.online ? greenCircle : redCircle;
+                devices[value.deviceName] = value;
+                dropdown.append("<li class=\"robot-name\"><a href=\"#\">" + value.deviceName + circle + "</a></li>");
+            }
+        }
+        if (selectedDeviceName != "") {
+            setValue(selectedDeviceName);
+        }
+        $(".dropdown-menu li a").click(function () {
+            setValue($(this).text());
+            selectedDeviceName = $(this).text();
+            $("#id-output").text(devices[selectedDeviceName].id);
+            newDeviceSelected();
+        });
+    });
+    function setValue(device) {
+        var circle = devices[device].online ? greenCircle : redCircle;
+        var dropdown = $("#robotDropDown:first-child");
+        dropdown.text(device);
+        dropdown.val(device);
+        dropdown.append(circle);
+    }
+}
+
 function newDeviceSelected() {
     /* remove the set historical events */
     $("#" + InputEnum.EVENTS).val("");
@@ -255,6 +291,7 @@ function openWebSocket() {
             if ("distance" in json) {
                 outputDistances(json.distance);
             } else if ("gyroReading" in json) {
+                normaliseGyroReadings(json.gyroReading);
                 outputGyroReadings(json.gyroReading);
             } else if ("event" in json) {
                 outputEvent(json.event);
@@ -313,6 +350,9 @@ function outputEventFromName(eventName, timestamp) {
     } else if (eventName == "reset") {
         changeButtons(false);
         wasFail = false;
+    } else if (!wasFail && eventName == "complete") {
+        changeButtons(true);
+        normaliseAgain = true;
     }
     var textArea = $("#" + InputEnum.EVENTS);
     textArea.val(textArea.val() + eventName + " at: " + timestamp + "\n");
@@ -371,6 +411,7 @@ function outputCalibration(data) {
                     break;
                 case "directionLeft":
                     setInput(InputEnum.CAL_DIR_LEFT, data.directionLeft.value);
+                    setInput(InputEnum.CAL_DIR_LEFT, data.directionLeft.value);
                     break;
                 case "directionRight":
                     setInput(InputEnum.CAL_DIR_RIGHT, data.directionRight.value);
@@ -389,9 +430,9 @@ function outputDistances(json) {
 }
 
 function outputLocation(json) {
-    if (!(json instanceof Array)) {
-        setInput(InputEnum.CURRENT_LOCATION_X, json.coordinates.x);
-        setInput(InputEnum.CURRENT_LOCATION_Y, json.coordinates.y);
+    if (json instanceof Array) {
+        setInput(InputEnum.CURRENT_LOCATION_X, json[0]);
+        setInput(InputEnum.CURRENT_LOCATION_Y, json[1]);
     } else {
         throw "Not implemented currently!";
     }
@@ -399,7 +440,7 @@ function outputLocation(json) {
 
 function outputRotation(json) {
     if (!(json instanceof Array)) {
-        setInput(InputEnum.CURRENT_ROTATION, json.rotation);
+        setInput(InputEnum.CURRENT_ROTATION, json);
     } else {
         throw "Not implemented currently!";
     }
@@ -410,11 +451,24 @@ function outputGyroReadings(json) {
         for (var property in json) {
             if (json.hasOwnProperty(property)) {
                 var type = json[property].type;
-                setInput(gyroOutputMap[type], json[property].attributes.value);
+                var value = json[property].attributes.value - gyroOutputMap[type].normlisation;
+                setInput(gyroOutputMap[type].output, value);
             }
         }
     } else {
         throw "Not all data available!";
+    }
+}
+
+function normaliseGyroReadings(data) {
+    if (normaliseAgain) {
+        for (var property in data) {
+            if (data.hasOwnProperty(property)) {
+                var type = data[property].type;
+                gyroOutputMap[type].normlisation = data[property].attributes.value;
+            }
+        }
+        normaliseAgain = false;
     }
 }
 
@@ -438,6 +492,7 @@ function getCmd(btnName) {
 }
 
 function changeButtons(disabled) {
+    isMoving = disabled; // if disabling buttons then we are moving
     for (var btnEnumStr in ButtonEnum) {
         var button = ButtonEnum[btnEnumStr];
         if (disabled && ((!wasFail && button.btnName == ButtonEnum.STOP.btnName) ||

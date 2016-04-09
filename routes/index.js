@@ -28,9 +28,13 @@ router.get("/", function(req, res) {
 router.get("/devices", function(req, res) {
   utils.dateLog("GET access! /devices");
   serializer.startJson();
-  var names = particle.getAllDeviceNames();
-  serializer.addJsonBlock(serializer.genKeyPairs("deviceNames", names));
-  serializer.endJson(res);
+  var names = particle.getAllDeviceData();
+  if (names == null) {
+    errorState(res);
+  } else {
+    serializer.addJsonBlock(serializer.genKeyPairs("devices", names));
+    serializer.endJson(res);
+  }
 });
 
 /**
@@ -169,15 +173,17 @@ router.post("/rotateToTarget", function(req, res) {
  * @return status code 200 if JSON body correct and request carried out, 500 otherwise.
  */
 router.post("/devices/locationData", function(req, res) {
-  utils.dateLog("POST Request! /devices/locationData");
-  var robot = utils.getParameter("robot-one", req.body);
-  if (robot != null) {
-    var rotation = utils.getParameter("rotation", robot);
-    var location = utils.getParameter("location", robot);
-    if (rotation != null && location != null) {
-      console.log("rotation: %d location x: %d location y: %d", rotation, location.x, location.y);
-      var ID = particle.getDeviceIDFromName("testbot-one");
-      locationData.addNewLocationData("testbot-one", location, rotation);
+  /* this route will be called a lot so there shouldn't be any logging throughout it as it isn't of use */
+  for (var deviceKey in particle.deviceArray) {
+    if (!particle.deviceArray.hasOwnProperty(deviceKey)) continue;
+    var robot = utils.getParameter(particle.deviceArray[deviceKey].name, req.body);
+    if (robot != null) {
+      var rotation = utils.getParameter("rotation", robot);
+      var location = utils.getParameter("location", robot);
+      if (rotation != null && location != null) {
+        console.log("rotation: %d location x: %d location y: %d", rotation, location.x, location.y);
+        locationData.addNewLocationData(particle.deviceArray[deviceKey].name, location, rotation);
+      }
     }
   }
   res.sendStatus(200);
@@ -284,7 +290,9 @@ function getAllSpecificData(name, req, res, storageName) {
     serializer.startJson();
     var array = storage[storageName](deviceName);
     for (var key in array) {
-      serializer.addJsonBlock(serializer.genKeyPairs(key, array[key]));
+      if (array.hasOwnProperty(key)) {
+        serializer.addJsonBlock(serializer.genKeyPairs(key, array[key]));
+      }
     }
     serializer.endJson(res);
   } else {

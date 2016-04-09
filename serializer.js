@@ -82,18 +82,22 @@ module.exports = {
   },
 
   genKeyPair: function (key, value) {
+    if (value == null) return;
+    var pair = {};
     if (value instanceof Object && "value" in value) {
       if ("timestamp" in value) {
-        var pair = {"type" : key, "attributes" : {"value" : value.value, "timestamp" : value.timestamp}};
+        pair = {"type" : key, "attributes" : {"value" : value.value, "timestamp" : value.timestamp}};
       } else {
-        var pair = {"type": key, "attributes" : {"value": value.value}};
+        pair = {"type": key, "attributes" : {"value": value.value}};
       }
       if ("rawTimestamp" in value) {
         pair.attributes.rawTimestamp = value.rawTimestamp;
       }
     } else {
       pair = value;
-      pair.type = key;
+      if (key != null) {
+        pair.type = key;
+      }
     }
     return pair;
   },
