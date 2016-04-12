@@ -68,7 +68,7 @@ function queueOnInterval() {
   if (queue.length != 0) {
     var object = queue[0];
     queue.splice(0, 1);
-    module.exports.particlePost(object.id, object.cmd, object.data);
+      module.exports.particlePost(object.id, object.cmd, object.data);
   }
 
   var deviceArray = module.exports.deviceArray;
@@ -271,7 +271,7 @@ module.exports = {
 
     if (arguments.length > 2 && cmd != null) {
       for (var arg = 2; arg < arguments.length; arg++) {
-        if (arguments[arg] == null) continue;
+        if (arguments[arg] == null || arguments[arg].length == 0) continue;
         dataString += "," + arguments[arg];
       }
     }

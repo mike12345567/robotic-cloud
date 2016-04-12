@@ -108,6 +108,7 @@ router.get("/locationList", function(req, res) {
 router.post("/move", function(req, res) {
   utils.dateLog("POST request! /move");
   var ID = getDeviceIDFromReq(req);
+  var name = particle.getDeviceNameFromID(ID);
   if (ID == null) return;
 
   var direction = utils.getTrueDirection(utils.getParameter("direction", req.body));
@@ -119,9 +120,9 @@ router.post("/move", function(req, res) {
     }
     particle.particlePost(ID, direction, distance, units);
     if (utils.isMove(direction)) {
-      locationData.robotShouldBeMoving();
+      locationData.robotShouldBeMoving(name);
     } else if (utils.isStop(direction)) {
-      locationData.robotShouldBeStopped();
+      locationData.robotShouldBeStopped(name);
     }
   } else {
     errorState(res);
@@ -174,17 +175,9 @@ router.post("/rotateToTarget", function(req, res) {
  */
 router.post("/devices/locationData", function(req, res) {
   /* this route will be called a lot so there shouldn't be any logging throughout it as it isn't of use */
-  for (var deviceKey in particle.deviceArray) {
-    if (!particle.deviceArray.hasOwnProperty(deviceKey)) continue;
-    var robot = utils.getParameter(particle.deviceArray[deviceKey].name, req.body);
-    if (robot != null) {
-      var rotation = utils.getParameter("rotation", robot);
-      var location = utils.getParameter("location", robot);
-      if (rotation != null && location != null) {
-        console.log("rotation: %d location x: %d location y: %d", rotation, location.x, location.y);
-        locationData.addNewLocationData(particle.deviceArray[deviceKey].name, location, rotation);
-      }
-    }
+  utils.parseLocationData(req);
+  if ("hazards" in req.body) {
+    storage.storeHazardData(req.body.hazards);
   }
   res.sendStatus(200);
   res.end();
@@ -305,7 +298,7 @@ function errorState(res) {
   res.end();
 }
 
-function getDeviceIDFromReq(req) {
+function getDeviceIDFromReq(req, res) {
   var deviceName = getDeviceName(req);
   if (deviceName != undefined && deviceName != null) {
     return particle.getDeviceIDFromName(deviceName);

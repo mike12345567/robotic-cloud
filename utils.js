@@ -1,6 +1,13 @@
-/* different options which can be passed in as JSON and will be considered for the calibration */
+var particle, locationData;
+
+/* stagger the requires to avoid cyclic dependencies */
+setTimeout(function () {
+  particle = require("./particle-calls.js");
+  locationData = require("./location.js");
+}, 100);
+
 var speedOptions = ["speed", "calibrateSpeed", "setSpeed"];
-var turnSpeedOptions = ["turnSpeed", "turnTime", "turnCalibration",
+var turnSpeedOptions = ["turning", "turnSpeed", "turnTime", "turnCalibration",
                         "turnTimeMs", "turningCalibration", "calibrateTurnTime",
                         "calibrateTurnTimeMs", "calibrateTurning", "calibrateTurnSpeed", "setTurnSpeed"];
 var wheelSpeedOptions = ["wheelSpeed", "calibrateWheelSpeed", "calibrateWheels",
@@ -160,7 +167,7 @@ module.exports = {
   },
 
   isTurn: function(direction) {
-    return direction == this.MovementEndpointsEnum.DIRECTION_TURN_RIGHT ||
+    return direction == this.MovementEndpointsEnum.DIRECTION_TURN_LEFT ||
         direction ==  this.MovementEndpointsEnum.DIRECTION_TURN_RIGHT;
   },
 
@@ -216,6 +223,22 @@ module.exports = {
       return isFound;
     } else {
       return objectCheck(obj, value);
+    }
+  },
+
+  parseLocationData: function (req) {
+    if (particle == null || locationData == null) return;
+    for (var deviceKey in particle.deviceArray) {
+      if (!particle.deviceArray.hasOwnProperty(deviceKey)) continue;
+      var robot = this.getParameter(particle.deviceArray[deviceKey].name, req.body);
+      if (robot != null) {
+        var rotation = this.getParameter("rotation", robot);
+        var location = this.getParameter("location", robot);
+        var rotationSpeed = this.getParameter("rotationSpeed", robot);
+        if (rotation != null && location != null) {
+          locationData.addNewLocationData(particle.deviceArray[deviceKey].name, location, rotation, rotationSpeed);
+        }
+      }
     }
   }
 };

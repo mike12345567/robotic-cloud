@@ -11,7 +11,7 @@ var historicalWindowMs = 5000;
 var moveTimeThresholdMs = 300;
 var lastLocationEntryTimeMs = 0;
 var differenceNoRotation = 15;      // MUST NOT BE ZERO
-var differenceToStopRotation = 40; // MUST NOT BE ZERO
+var timeToStopSeconds = 0.6;  // MUST NOT BE ZERO
 
 HistoricalKeyEnum = {
   LOCATION_DATA : "location"
@@ -89,10 +89,12 @@ function resetMovingData(deviceName) {
   robotMoveData[deviceName] = obj;
 }
 
-function needsToStopRotate(currentRotation, targetRotation) {
+function needsToStopRotate(currentRotation, targetRotation, rotationSpeed) {
   var angle = calculateAngleDifference(currentRotation, targetRotation);
   if (angle < 0) angle *= -1;
-  return angle < differenceToStopRotation;
+
+  console.log(rotationSpeed);
+  return angle < rotationSpeed * timeToStopSeconds;
 }
 
 function rotateRobotToTarget(deviceName, completion) {
@@ -108,12 +110,7 @@ function rotateRobotToTarget(deviceName, completion) {
 
   switch (robotMovingData.moving) {
     case true:
-      /* stop rotation when in threshold */
-      if (robotMovingData.startMoveTimeMs + moveTimeThresholdMs > new Date().getTime()) {
-        return;
-      }
-
-      if (needsToStopRotate(currentRotation, targetRotation)) {
+      if (needsToStopRotate(currentRotation, targetRotation, robotMovingData.rotationSpeed)) {
         stopRobot(deviceName, completion);
       }
       break;
@@ -142,10 +139,11 @@ function rotateRobotToTarget(deviceName, completion) {
 }
 
 function moveRobotToTarget(deviceName) {
-
+  
 }
 
 function stopRobot(deviceName, completion) {
+  var ID = particle.getDeviceIDFromName(deviceName);
   particle.particlePost(ID, utils.MovementEndpointsEnum.DIRECTION_STOP);
   robotMoveData[deviceName].shouldBeMoving = robotMoveData[deviceName].moving = false;
   targetRotationMap[deviceName] = null;
@@ -170,11 +168,15 @@ module.exports = {
     STOPPED : 0
   },
 
-  addNewLocationData: function (deviceName, location, rotation) {
+  addNewLocationData: function (deviceName, location, rotation, rotationSpeed) {
     if ("x" in location && "y" in location) {
       latestLocationMap[deviceName] = location;
       latestRotationMap[deviceName] = rotation;
+      robotMoveData[deviceName].rotationSpeed = rotationSpeed;
       testForHistoricalUpdate({deviceName:deviceName, location:location, rotation:rotation});
+    }
+    if (storage != null) {
+      storage.resetHazardData();
     }
     lastUpdateTimeMs = new Date().getTime();
     rotateRobotToTarget(deviceName, function() {
@@ -227,12 +229,14 @@ module.exports = {
 
   robotShouldBeMoving: function (deviceName) {
     initMovingData(deviceName);
-    robotMoveData[deviceName].shouldBeMoving = false;
+    robotMoveData[deviceName].shouldBeMoving = true;
   },
 
   robotShouldBeStopped: function (deviceName) {
     initMovingData(deviceName);
-    robotMoveData[deviceName].shouldBeMoving = true;
+    robotMoveData[deviceName].shouldBeMoving = false;
+    targetLocationMap[deviceName] = null;
+    targetRotationMap[deviceName] = null;
   },
 
   devicesReady: function (deviceArray) {

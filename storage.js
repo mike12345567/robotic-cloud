@@ -14,6 +14,8 @@ var gyroReadingsMap = [];
 var deadRobotsMap = [];
 var localIPsMap = [];
 
+var currentHazards = [];
+
 module.exports = {
   UltrasonicPosEnum: {
     US_POS_FRONT : "posFront"
@@ -174,6 +176,33 @@ module.exports = {
 
   getLatestRotation: function(deviceName) {
     return locationData.getCurrentRotation(deviceName);
+  },
+  
+  storeHazardData: function(data) {
+    if (data != null) {
+      var hazardCount = 0;
+      currentHazards = [];
+      var hazardElement = null;
+      do {
+        var key = "hazard" + (hazardCount+1);
+        if (data[hazardCount] != null && key in data[hazardCount]) {
+          hazardElement = data[hazardCount][key];
+          currentHazards[key] = hazardElement;
+        } else {
+          hazardElement = null;
+        }
+        hazardCount++;
+      } while (hazardElement != null);
+      websocket.needsUpdated("all", websocket.WebSocketUpdateEnum.HAZARD);
+    }
+  },
+  
+  getHazardData: function() {
+    return currentHazards;
+  },
+
+  resetHazardData: function() {
+    currentHazards = [];
   }
 };
 

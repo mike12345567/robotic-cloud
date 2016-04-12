@@ -56,6 +56,7 @@ InputEnum = {
     CAL_FRICTION : "friction-input",
     DIST_FRONT : "dist-front-output",
     EVENTS : "event-area",
+    HAZARDS : "hazard-area",
     CAL_DIR_LEFT: "left-direction-input",
     CAL_DIR_RIGHT: "right-direction-input",
     TARGET_LOCATION_X: "target-x-input",
@@ -299,6 +300,8 @@ function openWebSocket() {
                 outputLocation(json.location);
             } else if ("rotation" in json) {
                 outputRotation(json.rotation);
+            } else if ("hazards" in json) {
+                outputHazards(json.hazards);
             }
         } catch (e) {
             console.log('This doesn\'t look like a valid JSON: ', message.data);
@@ -351,7 +354,7 @@ function outputEventFromName(eventName, timestamp) {
         changeButtons(false);
         wasFail = false;
     } else if (!wasFail && eventName == "complete") {
-        changeButtons(true);
+        changeButtons(false);
         normaliseAgain = true;
     }
     var textArea = $("#" + InputEnum.EVENTS);
@@ -469,6 +472,25 @@ function normaliseGyroReadings(data) {
             }
         }
         normaliseAgain = false;
+    }
+}
+
+function outputHazards(data) {
+    var textArea = $("#" + InputEnum.HAZARDS);
+    textArea.val("");
+    /* only one hazard, this is transformed by serialiser */
+    if ("location" in data) {
+        outputString(data.location);
+        return;
+    }
+    for (var hazardCount in data) {
+        outputString(data[hazardCount].location);
+    }
+
+    function outputString(hazardElement) {
+        var outputString = "Hazard at: x - " + hazardElement.x + ", y - " + hazardElement.y +
+          ", width - " + hazardElement.width + ", height - " + hazardElement.height;
+        textArea.val(textArea.val() + outputString + "\n");
     }
 }
 
