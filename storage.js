@@ -203,7 +203,13 @@ module.exports = {
 
   resetHazardData: function() {
     currentHazards = [];
+  },
+
+  getCurrentSpeed: function(deviceName) {
+    if (calibrationMap[deviceName] == null) return 0;
+    return calibrationMap[deviceName][this.CalibrationEnum.SPEED][0];
   }
+
 };
 
 function getLatestDataFromMap(deviceName, map) {

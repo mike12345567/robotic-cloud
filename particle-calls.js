@@ -342,5 +342,11 @@ module.exports = {
     } else {
       this.particlePost(ID, utils.OtherEndpointsEnum.GET_CALIBRATION);
     }
+  },
+
+  changeLedState: function(deviceName, state) {
+    var trueState = state ? 1 : 0;
+    var ID = this.getDeviceIDFromName(deviceName);
+    this.particlePost(ID, utils.OtherEndpointsEnum.LED_OFF, trueState);
   }
 };

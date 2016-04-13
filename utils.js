@@ -37,7 +37,8 @@ module.exports = {
 
   OtherEndpointsEnum: {
     RESET_FAILED    : "resetFailed",
-    GET_CALIBRATION : "sendCalibration"
+    GET_CALIBRATION : "sendCalibration",
+    LED_OFF         : "ledState"
   },
 
   isLocalCommunication: function (endpoint) {

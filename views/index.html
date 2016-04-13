@@ -30,7 +30,7 @@
             </div>
             <div class="panel-body">
                 <div class="left-div col-md-3">
-                    <h4>Movement</h4>
+                    <h4 id="movement-h">Movement</h4>
                     <div id="movement-div">
                         <button type="button" class="btn btn-success mid-btn" id="forward-btn">Forward</button>
                         <button type="button" class="btn btn-success mid-btn" id="backward-btn">Backward</button><br>
@@ -39,11 +39,15 @@
                         <button type="button" class="btn btn-success" id="location-btn">Go to location</button><br>
                         <button type="button" class="btn btn-success" id="rotation-btn">Rotate to angle</button><br>
 
-                        <h4 id="controls-h">Controls</h4>
-                        <button type="button" class="btn btn-info" id="send-speed-btn">Send Speed</button><br>
-                        <button type="button" class="btn btn-info" id="cal-friction-btn">Send Friction</button><br>
-                        <button type="button" class="btn btn-info" id="cal-turning-btn">Calibrate Turning</button><br>
-                        <button type="button" class="btn btn-info" id="cal-wheels-btn">Calibrate Wheels</button><br>
+                        <h4 id="cal-h">Calibration</h4>
+                        <button type="button" class="btn btn-warning mid-btn" id="send-speed-btn">Send Speed</button>
+                        <button type="button" class="btn btn-warning mid-btn" id="cal-friction-btn">Send Friction</button><br>
+                        <button type="button" class="btn btn-warning mid-btn" id="cal-turning-btn">Calibrate Turning</button>
+                        <button type="button" class="btn btn-warning mid-btn" id="cal-wheels-btn">Calibrate Wheels</button><br>
+
+                        <h4 id="state-h">State</h4>
+                        <button type="button" class="btn btn-info mid-btn" id="led-on-btn">Led On</button>
+                        <button type="button" class="btn btn-info mid-btn" id="led-off-btn">Led Off</button><br>
                         <button type="button" class="btn btn-info" id="cal-reset-fail-btn">Reset Failed</button><br>
                         <button type="button" class="btn btn-danger" id="stop-btn">Stop</button><br>
                     </div>

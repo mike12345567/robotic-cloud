@@ -35,7 +35,9 @@ ButtonEnum = {
     CAL_FRICTION : {cmd: "friction", btnName: "cal-friction-btn", input: "friction-input"},
     RESET_FAIL : {cmd: "reset", btnName: "cal-reset-fail-btn"},
     TARGET_LOCATION : {cmd: "moveToTarget", btnName: "location-btn"},
-    TARGET_ROTATION : {cmd: "rotateToTarget", btnName: "rotation-btn"}
+    TARGET_ROTATION : {cmd: "rotateToTarget", btnName: "rotation-btn"},
+    LED_ON : {cmd: "ledOn", btnName: "led-on-btn"},
+    LED_OFF : {cmd: "ledOff", btnName: "led-off-btn"}
 };
 
 JoystickEnum = {
@@ -173,7 +175,7 @@ $(document).ready(function() {
                         if (!isNaN(rotateObj.degrees)) {
                             postToCloud(getCmd(name), rotateObj);
                         }
-                      changeButtons(true);
+                        changeButtons(true);
                         break;
                     case ButtonEnum.TARGET_LOCATION.btnName:
                         var locationObj = {coordinates: {
@@ -182,7 +184,10 @@ $(document).ready(function() {
                         if (!isNaN(locationObj.coordinates.x) && !isNaN(locationObj.coordinates.y)) {
                             postToCloud(getCmd(name), locationObj);
                         }
-                      changeButtons(true);
+                        changeButtons(true);
+                        break;
+                    case ButtonEnum.LED_ON.btnName: case ButtonEnum.LED_OFF.btnName:
+                        postToCloud(getCmd(name));
                         break;
                 }
             });

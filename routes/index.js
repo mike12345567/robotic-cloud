@@ -109,7 +109,10 @@ router.post("/move", function(req, res) {
   utils.dateLog("POST request! /move");
   var ID = getDeviceIDFromReq(req);
   var name = particle.getDeviceNameFromID(ID);
-  if (ID == null) return;
+  if (ID == null) {
+    errorState(res);
+    return;
+  }
 
   var direction = utils.getTrueDirection(utils.getParameter("direction", req.body));
   var distance = utils.getParameter("distance", req.body);
@@ -122,6 +125,7 @@ router.post("/move", function(req, res) {
     if (utils.isMove(direction)) {
       locationData.robotShouldBeMoving(name);
     } else if (utils.isStop(direction)) {
+      locationData.clearTargetData(name);
       locationData.robotShouldBeStopped(name);
     }
   } else {
@@ -272,6 +276,14 @@ router.post("/moveToTarget", function(req, res) {
   res.end();
 });
 
+router.post("/ledOff", function(req, res) {
+  changeLed(req, res, true);
+});
+
+router.post("/ledOn", function(req, res) {
+  changeLed(req, res, false);
+});
+
 /***************
  *  UTILITIES  *
  ***************/
@@ -294,8 +306,10 @@ function getAllSpecificData(name, req, res, storageName) {
 }
 
 function errorState(res) {
-  res.sendStatus(500);
-  res.end();
+  if (res != null) {
+    res.sendStatus(500);
+    res.end();
+  }
 }
 
 function getDeviceIDFromReq(req, res) {
@@ -319,6 +333,19 @@ function getDeviceName(req) {
   } else if ("devicename" in req.body) {
     return req.body.devicename.toLowerCase();
   }
+}
+
+function changeLed(req, res, state) {
+  utils.dateLog("POST Request! /ledOff");
+  var deviceName = getDeviceName(req);
+  if (deviceName == null) {
+    errorState(res);
+    return;
+  }
+
+  particle.changeLedState(deviceName, state);
+  res.sendStatus(200);
+  res.end();
 }
 
 module.exports = router;
