@@ -1,4 +1,5 @@
 var utils = require("./utils.js");
+var particle = require("./particle-calls.js");
 
 var differenceNoRotation = 5;      // MUST NOT BE ZERO
 var baseDistanceStopRotate = 40;
@@ -37,5 +38,14 @@ module.exports = {
     var angle = this.calculateAngleDifference(currentRotation, targetRotation);
     if (angle < 0) angle *= -1;
     return angle > differenceNoRotation;
+  },
+
+  rotateRobot: function(deviceName, currentRotation, targetRotation, robotMovingData) {
+    var ID = particle.getDeviceIDFromName(deviceName);
+    particle.particlePost(ID, this.whichDirectionToRotate(currentRotation, targetRotation));
+    robotMovingData.shouldBeMoving = true;
+    robotMovingData.turning = true;
+    robotMovingData.startRotation = currentRotation;
+    robotMovingData.startMoveTimeMs = new Date().getTime();
   }
 };
