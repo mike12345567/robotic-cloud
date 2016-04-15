@@ -241,6 +241,12 @@ module.exports = {
         }
       }
     }
+  },
+  
+  createCopyCallback: function(func, arg) {
+    return function() {
+      func(arg);
+    };
   }
 };
 

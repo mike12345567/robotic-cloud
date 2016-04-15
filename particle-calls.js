@@ -46,7 +46,7 @@ function createMcastServer(IP) {
     /* cannot respond to mcast */
     console.log("LOCAL AREA COMMS - " + req.url);
     var urlParts = req.url.split("/");
-    //handleRequest({data:req.payload.toString('utf-8'), coreid: urlParts[1], name:urlParts[2]});
+    handleRequest({data:req.payload.toString('utf-8'), coreid: urlParts[1], name:urlParts[2]}, true);
     res.end();
   });
 
@@ -103,7 +103,7 @@ function openEventStream() {
   particle.getEventStream({deviceId: "mine", auth: accessToken}).then(function(stream) {
     stream.on("event", function(data) {
       console.log("EVENT - " + data.name + " - " + data.published_at);
-      handleRequest(data);
+      handleRequest(data, false);
     });
     stream.on("end", function() {
       console.log("ended!  re-opening in 3 seconds...");
@@ -112,14 +112,25 @@ function openEventStream() {
   });
 }
 
-function handleRequest(data) {
+function handleRequest(data, isLocal) {
   var name = module.exports.getDeviceNameFromID(data.coreid);
+
+  // if this came over the local then we only handle certain events
+  if (isLocal) {
+    if (data.name == storage.EventEnum.MOVE_STATUS) {
+      var move = base64js.toByteArray(data.data);
+      location.moveStatus(name, move);
+    }
+    return;
+  }
+
   switch (data.name) {
     case storage.EventEnum.COMPLETE:
       storage.storeEvent(name, storage.EventEnum.COMPLETE);
       break;
     case storage.EventEnum.STOPPED:
       storage.storeEvent(name, storage.EventEnum.STOPPED);
+      location.robotShouldBeStopped(name);
       break;
     case storage.EventEnum.CALIBRATION_VALUES:
       var temp = base64js.toByteArray(data.data);
@@ -139,18 +150,16 @@ function handleRequest(data) {
     case storage.EventEnum.FAILED:
       storage.storeEvent(name, storage.EventEnum.FAILED);
       storage.setRobotAsDead(name);
+      location.robotShouldBeStopped(name);
       break;
     case storage.EventEnum.HAS_FAILED:
       storage.storeEvent(name, storage.EventEnum.HAS_FAILED);
       storage.setRobotAsDead(name);
+      location.robotShouldBeStopped(name);
       break;
     case storage.EventEnum.LOCAL_IP:
       var temp = base64js.toByteArray(data.data);
       storage.storeLocalIP(name, temp);
-      break;
-    case storage.EventEnum.MOVE_STATUS:
-      var temp = base64js.toByteArray(data.data);
-      
       break;
     default:
       console.log("EVENT UNHANDLED! : " + data.name);

@@ -8,6 +8,7 @@ var isMoving = false;
 var normaliseAgain = true;
 var greenCircle = "<div class=\"green-circle\"></div>";
 var redCircle = "<div class=\"red-circle\"></div>";
+var minX = 100, maxX = 650, minY = 100, maxY = 400;
 
 EndpointsEnum = {
   MOVE: "move",
@@ -183,9 +184,16 @@ $(document).ready(function () {
           case ButtonEnum.TARGET_ROTATION.btnName:
             var rotateObj = {degrees: getInput(InputEnum.TARGET_ROTATION)};
             if (!isNaN(rotateObj.degrees)) {
-              postToCloud(getCmd(name), rotateObj);
+              var degrees = parseInt(rotateObj.degrees);
+              if (degrees >= 0 && degrees <= 360) {
+                postToCloud(getCmd(name), rotateObj);
+                changeButtons(true);
+              } else {
+                alertDegrees();
+              }
+            } else {
+              alertDegrees();
             }
-            changeButtons(true);
             break;
           case ButtonEnum.TARGET_LOCATION.btnName:
             var locationObj = {
@@ -194,10 +202,18 @@ $(document).ready(function () {
                 y: getInput(InputEnum.TARGET_LOCATION_Y)
               }
             };
-            if (!isNaN(locationObj.coordinates.x) && !isNaN(locationObj.coordinates.y)) {
-              postToCloud(getCmd(name), locationObj);
+            if (!isNaN(locationObj.coordinates.x) && !isNaN(locationObj.coordinates.y)){
+              var x = parseInt(locationObj.coordinates.x);
+              var y = parseInt(locationObj.coordinates.y);
+              if (x >= minX && x <= maxX && y >= minY && y <= maxY) {
+                postToCloud(getCmd(name), locationObj);
+                changeButtons(true);
+              } else {
+                alertCoords();
+              }
+            } else {
+              alertCoords();
             }
-            changeButtons(true);
             break;
           case ButtonEnum.LED_ON.btnName:
           case ButtonEnum.LED_OFF.btnName:
@@ -317,6 +333,7 @@ function openWebSocket() {
         outputEvent(json.event);
       } else if ("location" in json) {
         outputLocation(json.location);
+        outputHazards(null);
       } else if ("rotation" in json) {
         outputRotation(json.rotation);
       } else if ("hazards" in json) {
@@ -355,9 +372,9 @@ function sendCalibration(property, value, valueTwo) {
 }
 
 function sendUpdatedDirection() {
-  var postObj = {};
-  postObj.directionLeft = getInput(InputEnum.CAL_DIR_LEFT);
-  postObj.directionRight = getInput(InputEnum.CAL_DIR_RIGHT);
+  var postObj = {direction: {}};
+  postObj.direction.left = getInput(InputEnum.CAL_DIR_LEFT);
+  postObj.direction.right = getInput(InputEnum.CAL_DIR_RIGHT);
 
   postToCloud(EndpointsEnum.CALIBRATE, postObj);
 }
@@ -368,7 +385,9 @@ function sendUpdatedDirection() {
 function outputEventFromName(eventName, timestamp) {
   if (eventName == "failed" || eventName == "hasFailed") {
     wasFail = true;
+    $("#" + ButtonEnum.RESET_FAIL.btnName).prop("disabled", false);
     changeButtons(true);
+
   } else if (eventName == "reset") {
     changeButtons(false);
     wasFail = false;
@@ -497,6 +516,8 @@ function normaliseGyroReadings(data) {
 function outputHazards(data) {
   var textArea = $("#" + InputEnum.HAZARDS);
   textArea.val("");
+
+  if (data == null) return;
   /* only one hazard, this is transformed by serialiser */
   if ("location" in data) {
     outputString(data.location);
@@ -579,4 +600,13 @@ function setInput(inputName, value) {
   } else {
     $("#" + inputName).val(value);
   }
+}
+
+function alertCoords() {
+  alert("X coordinate must be within " + minX +  " to " + maxX + "." +
+    "\nY coordinate must be within " + minY + " to " + maxY + ".");
+}
+
+function alertDegrees() {
+  alert("Degrees must be within 0 - 360.");
 }

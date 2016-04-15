@@ -158,7 +158,7 @@ router.post("/rotateToTarget", function(req, res) {
   if (radians != null) {
     degrees = radians * (180/Math.PI);
   }
-  if (degrees != null) {
+  if (degrees != null && degrees >= 0 && degrees <= 360) {
     locationData.setTargetRotation(deviceName, degrees)
   } else {
     errorState(res);
@@ -265,7 +265,9 @@ router.post("/moveToTarget", function(req, res) {
   }
   var coordinates = utils.getParameter("coordinates", req.body);
 
-  if (coordinates != null && "x" in coordinates && "y" in coordinates) {
+  if (coordinates != null && "x" in coordinates && "y" in coordinates &&
+      coordinates.x >= locationData.screenSize.minX && coordinates.x <= locationData.screenSize.maxX &&
+      coordinates.y >= locationData.screenSize.minY && coordinates.y <= locationData.screenSize.maxY) {
     locationData.setTargetLocation(deviceName, coordinates);
   } else {
     errorState(res);
