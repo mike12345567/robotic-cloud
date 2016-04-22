@@ -10,9 +10,9 @@ var lastUpdateTimeMs = 0;
 
 var historicalWindowMs = 5000;
 var moveTimeThresholdMs = 300;
-var baseAdjustmentLengthMs = 200;
+var baseAdjustmentLengthMs = 250;
 var lastLocationEntryTimeMs = 0;
-var maxAttempts = 300;
+var maxAttempts = 10;
 
 HistoricalKeyEnum = {
   LOCATION_DATA : "location"
@@ -233,7 +233,7 @@ module.exports = {
     STOPPED : 0
   },
 
-  screenSize: {minX: 100, minY: 100, maxX: 650, maxY: 400},
+  screenSize: {minX: 50, minY: 50, maxX: 800, maxY: 430},
 
   addNewLocationData: function (deviceName, location, rotation, rotationSpeed) {
     if ("x" in location && "y" in location) {

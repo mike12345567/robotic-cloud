@@ -1,7 +1,7 @@
 var obj;
 
 function addToJsonObject(arg) {
-  if (!"type" in arg) {
+  if (arg == null || !("type" in arg)) {
     return;
   }
   if ("attributes" in arg) {
@@ -27,22 +27,22 @@ module.exports = {
   addJson: function() {
     for (var i = 0; i < arguments.length; i++) {
       var arg = arguments[i];
-      if (!arg instanceof Array) {
+      if (!(arg instanceof Array)) {
         addToJsonObject(arg);
       } else {
         if (arg.length == 0) {
           addNoData();
           return;
         }
-        for (var i = 0; i < arg.length; i++) {
-          addToJsonObject(arg[i]);
+        for (var j = 0; j < arg.length; j++) {
+          addToJsonObject(arg[j]);
         }
       }
     }
   },
 
   addJsonBlock: function(block, type) {
-    if (!block instanceof Array || !"type" in block) {
+    if (block == null || !block instanceof Array || !"type" in block) {
       return;
     }
     var oneTypeSpecified = (type != null);
@@ -67,6 +67,10 @@ module.exports = {
     addJsonBlock(type, finalObj);
   },
 
+  setError: function(status, message) {
+    obj["error"] = {status : status, reason : message};
+  },
+
   endJson: function(res) {
     if (obj.length == 1) {
       obj = obj[0]; // don"t need it to be JSON array if its single object
@@ -79,6 +83,10 @@ module.exports = {
     } else {
       return response;
     }
+  },
+
+  currentKeys: function() {
+    return Object.keys(obj).length;
   },
 
   genKeyPair: function (key, value) {
@@ -95,7 +103,7 @@ module.exports = {
       }
     } else {
       pair = value;
-      if (key != null) {
+      if (key != null && key != "type" && key != "value" && key != "attribute") {
         pair.type = key;
       }
     }

@@ -4,7 +4,7 @@ var particle = require("./particle-calls.js");
 var differenceNoRotation = 5;      // MUST NOT BE ZERO
 var baseDistanceStopRotate = 40;
 
-var differenceNoMovement = 50;
+var differenceNoMovement = 100;
 
 function baseNeedsToRotate(currentRotation, targetRotation, threshold) {
   var angle = module.exports.calculateAngleDifference(currentRotation, targetRotation);

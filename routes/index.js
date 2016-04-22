@@ -48,6 +48,10 @@ router.get("/distances", function(req, res) {
   getAllSpecificData("distances", req, res, "getAllDistances");
 });
 
+router.get("/currentDistance", function(req, res) {
+  getAllSpecificData("currentDistance", req, res, "getLatestDistance");
+});
+
 /**
  * Gets all historical gyroscope updates for a robot accel and gyro (xyz)
  * @param expects the header or get body to contain a "deviceName" for the device to get data from.
@@ -59,6 +63,10 @@ router.get("/gyroReadings", function(req, res) {
   getAllSpecificData("gyroReadings", req, res, "getAllGyroReadings");
 });
 
+router.get("/currentGyroReading", function(req, res) {
+  getAllSpecificData("currentGyroReading", req, res, "getLatestGyroReading");
+});
+
 /**
  * Gets all events which have been received for a robot.
  * @param expects the header or get body to contain a "deviceName" for the device to get data from.
@@ -68,6 +76,10 @@ router.get("/gyroReadings", function(req, res) {
  */
 router.get("/events", function(req, res) {
   getAllSpecificData("events", req, res, "getAllEvents");
+});
+
+router.get("/currentEvent", function(req, res) {
+  getAllSpecificData("currentEvent", req, res, "getLatestEvent");
 });
 
 /**
@@ -90,6 +102,54 @@ router.get("/calibrationValues", function(req, res) {
  */
 router.get("/locationList", function(req, res) {
   getAllSpecificData("locationList", req, res, "getAllLocationData");
+});
+
+/**
+ * Gets the current location of the robot that goes by the name passed in the header or get body
+ * @param expects the header or get body to contain a "deviceName" for the device to get data from.
+ * @return JSON object which contains the "type" which will be statically noted as "location", a JSON array "attributes"
+ * which contains JSON objects each with a "coordinates" object containing "x" and "y" values (these are arbitrary to
+ * the scene), "rotation" value in degrees and a "timestamp".
+ */
+router.get("/currentLocation", function(req, res) {
+  getLocationOrRotationData("currentLocation", req, res, "getLatestLocation", "location");
+});
+
+router.get("/currentRotation", function(req, res) {
+  getLocationOrRotationData("currentRotation", req, res, "getLatestRotation", "rotation");
+});
+
+router.get("/device/*", function(req, res) {
+  var elements = req.url.split("/");
+  var deviceName = elements[elements.length-1];
+  
+  var options = ["getLatestDistance", "getLatestGyroReading", "getLatestEvent", "getLatestLocation", "getLatestRotation"];
+  var names = ["distance", "gyroReading", "event", "location", "rotation"];
+  if (particle.getDeviceIDFromName(deviceName) != null) {
+    serializer.startJson();
+    if (!particle.isRobotAvailable(deviceName)) {
+      serializer.setError("offline", "The robot is not currently online, please check the robot and the network setup.");
+    } else {
+      for (var option in options) {
+        if (options.hasOwnProperty(option)) {
+          var array = storage[options[option]](deviceName);
+          var keyPairs = [];
+          for (var key in array) {
+            if (array.hasOwnProperty(key)) {
+              keyPairs.push(serializer.genKeyPair(key, array[key]));
+            }
+          }
+          serializer.addJsonBlock(keyPairs, names[option]);
+        }
+      }
+      if (serializer.currentKeys() == 0) {
+        serializer.setError("network error", "no data available, network issues likely.");
+      }
+    }
+    serializer.endJson(res);
+  } else {
+    errorState(res);
+  }
 });
 
 /*****************
@@ -298,13 +358,35 @@ function getAllSpecificData(name, req, res, storageName) {
     var array = storage[storageName](deviceName);
     for (var key in array) {
       if (array.hasOwnProperty(key)) {
-        serializer.addJsonBlock(serializer.genKeyPairs(key, array[key]));
+        if (array[key] instanceof Array) {
+          serializer.addJsonBlock(serializer.genKeyPairs(key, array[key]));
+        } else {
+          serializer.addJson(serializer.genKeyPair(key, array[key]));
+        }
       }
     }
     serializer.endJson(res);
   } else {
     errorState(res);
   }
+}
+
+function getLocationOrRotationData(name, req, res, storageName, key) {
+  utils.dateLog("GET Request! /" + name);
+  var deviceName = getDeviceName(req);
+
+  if (deviceName != null) {
+    var value = storage[storageName](deviceName);
+
+    if (value != null || value == JSON.stringify({})) {
+      serializer.startJson();
+      serializer.addJsonBlock(serializer.genKeyPairs(null, value), key);
+      serializer.endJson(res);
+      // escape and do not error
+      return;
+    }
+  }
+  errorState(res);
 }
 
 function errorState(res) {

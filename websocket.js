@@ -18,6 +18,7 @@ server.on("connection", function (socket) {
   socket.on("message", function(message) {
     var obj = JSON.parse(message);
     if ("deviceName" in obj) {
+      if (deviceName != null) removeFromSocketMap(deviceName, socket);
       deviceName = handleDeviceName(obj, socket);
     } else { // this must be a message from a computer vision system
       // we don't need to store the socket as we won't reply
@@ -26,13 +27,17 @@ server.on("connection", function (socket) {
   });
 
   socket.on('close', function(code, message) {
-    if (socketMap[deviceName] == null) return;
-    var index = socketMap[deviceName].indexOf(socket);
-    if (index >= 0) {
-      socketMap[deviceName].splice(index, 1);
-    }
+    removeFromSocketMap(deviceName, socket);
   });
 });
+
+function removeFromSocketMap(deviceName, socket) {
+  if (socketMap[deviceName] == null) return;
+  var index = socketMap[deviceName].indexOf(socket);
+  if (index >= 0) {
+    socketMap[deviceName].splice(index, 1);
+  }
+}
 
 function handleDeviceName(data, socket) {
   var deviceName = data.deviceName;
@@ -73,7 +78,7 @@ function getDataFromStorage(deviceName, key) {
     case module.exports.WebSocketUpdateEnum.LOCATION:
       return storage.getLatestLocation(deviceName);
     case module.exports.WebSocketUpdateEnum.ROTATION:
-      return {"value": storage.getLatestRotation(deviceName)};
+      return storage.getLatestRotation(deviceName);
     case module.exports.WebSocketUpdateEnum.EVENT:
       return storage.getLatestEvent(deviceName);
     case module.exports.WebSocketUpdateEnum.HAZARD:

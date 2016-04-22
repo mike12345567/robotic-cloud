@@ -1,9 +1,9 @@
-var selectedDeviceName = "";
+var selectedDeviceName = null;
 var devices = [];
 var noSelected = "none";
 var waitForLift = false;
 var wasFail = false;
-var webSocketOpened = false;
+var connection = null;
 var isMoving = false;
 var normaliseAgain = true;
 var greenCircle = "<div class=\"green-circle\"></div>";
@@ -271,7 +271,7 @@ function refreshDevices() {
         dropdown.append("<li class=\"robot-name\"><a href=\"#\">" + value.deviceName + circle + "</a></li>");
       }
     }
-    if (selectedDeviceName != "") {
+    if (selectedDeviceName != null) {
       setValue(selectedDeviceName);
     }
     $(".dropdown-menu li a").click(function () {
@@ -288,6 +288,8 @@ function refreshDevices() {
     dropdown.val(device);
     dropdown.append(circle);
   }
+
+  openWebSocket();
 }
 
 function newDeviceSelected() {
@@ -307,18 +309,29 @@ function newDeviceSelected() {
 }
 
 function openWebSocket() {
-  if (webSocketOpened) return;
-  webSocketOpened = true;
+  if (selectedDeviceName == null) return;
+
+  if (connection != null) {
+    if (connection.readyState == 1) {
+      sendDeviceName();
+      return;
+    } else {
+      connection.close();
+      connection = null;
+    }
+  }
+
   window.WebSocket = window.WebSocket || window.MozWebSocket;
 
-  var connection = new WebSocket('ws://localhost:4201');
+  connection = new WebSocket('ws://localhost:4201');
 
   connection.onopen = function () {
-    var obj = {deviceName: selectedDeviceName};
-    connection.send(JSON.stringify(obj));
+    sendDeviceName();
   };
 
   connection.onerror = function (error) {
+    connection.close();
+    connection = null;
   };
 
   connection.onmessage = function (message) {
@@ -342,7 +355,17 @@ function openWebSocket() {
     } catch (e) {
       console.log('This doesn\'t look like a valid JSON: ', message.data);
     }
+
+    connection.onclose = function (event) {
+      connection = null;
+    }
   };
+
+  function sendDeviceName() {
+    var obj = {deviceName: selectedDeviceName};
+    connection.send(JSON.stringify(obj));
+  }
+
 }
 
 /*****************************
@@ -471,16 +494,16 @@ function outputDistances(json) {
 }
 
 function outputLocation(json) {
-  if (json instanceof Array) {
-    setInput(InputEnum.CURRENT_LOCATION_X, json[0]);
-    setInput(InputEnum.CURRENT_LOCATION_Y, json[1]);
+  if (json instanceof Object) {
+    setInput(InputEnum.CURRENT_LOCATION_X, json.x);
+    setInput(InputEnum.CURRENT_LOCATION_Y, json.y);
   } else {
     throw "Not implemented currently!";
   }
 }
 
 function outputRotation(json) {
-  if (!(json instanceof Array)) {
+  if (json != null) {
     setInput(InputEnum.CURRENT_ROTATION, json);
   } else {
     throw "Not implemented currently!";

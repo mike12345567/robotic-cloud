@@ -171,11 +171,11 @@ module.exports = {
   },
 
   getLatestLocation: function(deviceName) {
-    return locationData.getCurrentLocation(deviceName);
+    return {value: locationData.getCurrentLocation(deviceName)};
   },
 
   getLatestRotation: function(deviceName) {
-    return locationData.getCurrentRotation(deviceName);
+    return {value: locationData.getCurrentRotation(deviceName)};
   },
   
   storeHazardData: function(data) {
@@ -215,6 +215,10 @@ module.exports = {
 function getLatestDataFromMap(deviceName, map) {
   var array = [];
 
+  if (map[deviceName] == null) {
+    return null;
+  }
+
   for (var key in map[deviceName]) {
     array[key] = map[deviceName][key][map[deviceName][key].length-1];
   }
@@ -223,6 +227,10 @@ function getLatestDataFromMap(deviceName, map) {
 
 function getLatestDataFromMapByKey(deviceName, map, key) {
   var array = [];
+
+  if (map[deviceName] == null || map[deviceName][key] == null) {
+    return null;
+  }
 
   array[key] = map[deviceName][key][map[deviceName][key].length-1];
   return array;
