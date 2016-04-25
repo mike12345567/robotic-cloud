@@ -54,7 +54,6 @@ module.exports = {
   },
 
   setRobotAsDead: function (deviceName) {
-    initArray(deadRobotsMap, deviceName);
     var deadObject = {};
     deadObject.alive = false;
     deadObject.deadAt = new Date().getTime();
@@ -62,18 +61,18 @@ module.exports = {
   },
 
   setRobotAsAlive: function (deviceName) {
-    initArray(deadRobotsMap, deviceName);
-    var deadObject = deadRobotsMap[deviceName];
-    if (deadObject == null) {
-      deadObject = {};
-    }
+    var deadObject = {};
     deadObject.alive = true;
-    deadObject.deadAt = null;
+    deadObject.deadAt = "n/a";
+    deadRobotsMap[deviceName] = deadObject;
   },
 
   getRobotHealthStatus: function (deviceName) {
-    initArray(deadRobotsMap, deviceName);
-    return deadRobotsMap[deviceName];
+    if (deadRobotsMap[deviceName] == null) {
+      this.setRobotAsAlive(deviceName);
+    }
+
+    return {type: "health", value : deadRobotsMap[deviceName]};
   },
 
   storeEvent: function (deviceName, eventName) {

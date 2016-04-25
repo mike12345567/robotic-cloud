@@ -37,6 +37,24 @@ router.get("/devices", function(req, res) {
   }
 });
 
+router.get("/isdead", function(req, res) {
+  utils.dateLog("GET access! /isdead");
+  var deviceName = getDeviceName(req);
+
+  if (deviceName != null) {
+    serializer.startJson();
+    var isdead = storage.getRobotHealthStatus(deviceName);
+    if (particle.isRobotAvailable(deviceName)) {
+      serializer.addJson(isdead);
+    } else {
+      serializer.addJson({type: isdead.type, value: {status: "offline"}});
+    }
+    serializer.endJson(res);
+  } else {
+    errorState(res);
+  }
+});
+
 /**
  * Gets all historical distance updates for a robot (its front facing Ultrasonic sensor)
  * @param expects the header or get body to contain a "deviceName" for the device to get data from.
