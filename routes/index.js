@@ -6,20 +6,10 @@ var locationData = require("../location.js");
 var storage = require("../storage.js");
 var serializer = require("../serializer.js");
 var particle = require("../particle-calls.js");
-var path = require("path");
 
 /****************
  * GET REQUESTS *
  ****************/
-
-/**
- * Gets the homepage from the node server, this version uses the API instead of direct Particle calls
- * @return a static web page with controls on it
- */
-router.get("/", function(req, res) {
-  utils.dateLog("Page access! (Main page)");
-  res.sendFile(path.resolve("../views/index.html"));
-});
 
 /**
  * Gets all of the devices in the system, a separate call must be made to check if the robot is available
@@ -164,6 +154,19 @@ router.get("/device/*", function(req, res) {
         serializer.setError("network error", "no data available, network issues likely.");
       }
     }
+    serializer.endJson(res);
+  } else {
+    errorState(res);
+  }
+});
+
+router.get("/isUsingLocal", function(req, res) {
+  utils.dateLog("GET access! /isUsingLocal");
+  var deviceName = getDeviceName(req);
+
+  if (deviceName != null) {
+    serializer.startJson();
+    serializer.addJson({type: "isLocal", value: storage.isDeviceUsingLocal(deviceName)});
     serializer.endJson(res);
   } else {
     errorState(res);
@@ -364,6 +367,16 @@ router.post("/ledOn", function(req, res) {
   changeLed(req, res, false);
 });
 
+router.post("/useWeb", function(req, res) {
+  utils.dateLog("POST Request! /useWeb");
+  useLocal(req, res, false);
+});
+
+router.post("/useLocal", function(req, res) {
+  utils.dateLog("POST Request! /useLocal");
+  useLocal(req, res, true);
+});
+
 /***************
  *  UTILITIES  *
  ***************/
@@ -446,6 +459,18 @@ function changeLed(req, res, state) {
   }
 
   particle.changeLedState(deviceName, state);
+  res.sendStatus(200);
+  res.end();
+}
+
+function useLocal(req, res, shouldUseLocal) {
+  var deviceName = getDeviceName(req);
+  if (deviceName == null) {
+    errorState(res);
+    return;
+  }
+
+  storage.deviceUsingLocal(deviceName, shouldUseLocal);
   res.sendStatus(200);
   res.end();
 }

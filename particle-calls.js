@@ -277,6 +277,8 @@ module.exports = {
 
   particlePost: function particlePost(deviceID, cmd) {
     var dataString = cmd;
+    var isUsingLocal = storage.isDeviceUsingLocal(module.exports.getDeviceNameFromID(deviceID));
+    var isLocal = utils.isLocalCommunication(cmd) && isUsingLocal;
 
     if (arguments.length > 2 && cmd != null) {
       for (var arg = 2; arg < arguments.length; arg++) {
@@ -286,7 +288,7 @@ module.exports = {
     }
 
     if (deviceID != "all") {
-      if (utils.isLocalCommunication(cmd)) {
+      if (isLocal) {
         localPostData(module.exports.getDeviceNameFromID(deviceID), dataString);
       } else {
         postData(deviceID, dataString);
@@ -294,7 +296,7 @@ module.exports = {
     } else {
       var deviceArray = module.exports.deviceArray;
       for (var i = 0; i < deviceArray.length; i++) {
-        if (utils.isLocalCommunication(cmd)) {
+        if (isLocal) {
           localPostData(module.exports.getDeviceNameFromID(deviceArray[i].id), dataString);
         } else {
           postData(deviceArray[i].id, dataString);

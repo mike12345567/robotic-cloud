@@ -56,7 +56,7 @@ module.exports = {
   setRobotAsDead: function (deviceName) {
     var deadObject = {};
     deadObject.alive = false;
-    deadObject.deadAt = new Date().getTime();
+    deadObject.deadAt = util.getDateNow();
     deadRobotsMap[deviceName] = deadObject;
   },
 
@@ -112,11 +112,11 @@ module.exports = {
 
   storeLocalIP: function (deviceName, IP) {
     var ipString = IP[3] + "." + IP[2] + "." + IP[1] + "." + IP[0];
-    localIPsMap[deviceName] = ipString;
+    localIPsMap[deviceName] = {ip: ipString};
   },
 
   getLocalIP: function(deviceName) {
-    return localIPsMap[deviceName];
+    return localIPsMap[deviceName].ip;
   },
 
   getLatestDistance: function (deviceName) {
@@ -207,6 +207,21 @@ module.exports = {
   getCurrentSpeed: function(deviceName) {
     if (calibrationMap[deviceName] == null) return 0;
     return calibrationMap[deviceName][this.CalibrationEnum.SPEED][0];
+  },
+
+  deviceUsingLocal: function(deviceName, enabled) {
+    if (localIPsMap[deviceName] == null) {
+      localIPsMap[deviceName] = {};
+    }
+    localIPsMap[deviceName].enabled = enabled;
+  },
+
+  isDeviceUsingLocal: function(deviceName) {
+    if (localIPsMap[deviceName] == null) {
+      localIPsMap[deviceName] = {enabled: true};
+    }
+
+    return localIPsMap[deviceName].enabled;
   }
 
 };

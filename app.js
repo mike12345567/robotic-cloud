@@ -5,6 +5,9 @@ var cookieParser = require("cookie-parser");
 var bodyParser = require("body-parser");
 
 var routes = require("./routes/index");
+var viewRoutes = require("./routes/views");
+
+var versionOnePrefix = "/api/v1";
 
 /********************
  *  EXPRESS CONFIG  *
@@ -26,6 +29,7 @@ app.use(function (req, res, next) {
 });
 
 app.use("/public", express.static(path.join(__dirname, "public")));
-app.use("/", routes);
+app.use(versionOnePrefix, routes);
+app.use("/", viewRoutes);
 
 module.exports = {app: app};

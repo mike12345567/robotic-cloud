@@ -1,11 +1,17 @@
 <html>
 <head>
-    <script src="public/js/jquery.min.js"></script>
-    <script src="public/js/bootstrap.min.js"></script>
+    <script src="public/js/lib/jquery.min.js"></script>
+    <script src="public/js/lib/bootstrap.min.js"></script>
+    <script src="public/js/lib/b64.js"></script>
+    <script src="public/js/lib/bootstrap-switch.min.js"></script>
     <link rel="stylesheet" type="text/css" href="public/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="public/css/bootstrap-switch.min.css">
     <link rel="stylesheet" type="text/css" href="public/css/index.css">
     <script src="https://cdn.jsdelivr.net/sparkjs/1.0.0/spark.min.js"></script>
-    <script src="public/js/b64.js"></script>
+    <script src="public/js/buttons.js"></script>
+    <script src="public/js/cloud.js"></script>
+    <script src="public/js/outputs.js"></script>
+    <script src="public/js/utils.js"></script>
     <script src="public/js/index.js"></script>
     <title>Robot Controls</title>
     <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=1.0, user-scalable=0" />
@@ -26,6 +32,12 @@
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="robotDropDown" id="robotDropDownList">
                     </ul>
+                </div>
+                <div class="checkbox">
+                    <label>
+                        <strong>Local Area Comms: </strong>
+                        <input type="checkbox" name="local-checkbox" checked>
+                    </label>
                 </div>
             </div>
             <div class="panel-body">
