@@ -1,5 +1,5 @@
 var accessToken = "d451f895e6d72efc774b82b6de71bed6ba43522c";
-var functionName = "makeMove";
+var functionName = "command";
 
 var storage = require("./storage.js");
 var base64js = require("./b64.js");
