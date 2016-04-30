@@ -287,7 +287,7 @@ router.post("/calibrate", function(req, res) {
     return;
   }
 
-  var data = utils.getCalibrationPost(req.body);
+  var data = utils.getCalibrationDataFromPost(req.body);
   if (data == null || !(data instanceof Array)) {
     errorState(res);
     return;
@@ -422,7 +422,7 @@ function getLocationOrRotationData(name, req, res, storageName, key) {
 
 function errorState(res) {
   if (res != null) {
-    res.sendStatus(500);
+    res.sendStatus(404);
     res.end();
   }
 }

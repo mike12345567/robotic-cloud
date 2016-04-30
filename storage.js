@@ -221,6 +221,10 @@ module.exports = {
       localIPsMap[deviceName] = {enabled: true};
     }
 
+    if (localIPsMap[deviceName].enabled == null) {
+      localIPsMap[deviceName].enabled = true;
+    }
+
     return localIPsMap[deviceName].enabled;
   }
 

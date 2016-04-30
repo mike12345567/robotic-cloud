@@ -118,7 +118,7 @@ module.exports = {
     }
   },
 
-  getCalibrationPost: function(object) {
+  getCalibrationDataFromPost: function(object) {
     var array = [];
     var optionCount = 0;
 
