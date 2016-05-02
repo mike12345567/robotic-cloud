@@ -184,7 +184,7 @@ router.get("/isUsingLocal", function(req, res) {
  * @param JSON body optionally can contain "distance", this states how far the move should occur for.
  * @param JSON body optionally can contain "units", this states the units the "distance" has been specified in. If
  * distance specified but no units it will assume "cm" or "degrees" as applicable. This may be mm, cm, m or degrees.
- * @return status code 200 if JSON body correct and request carried out, 500 otherwise.
+ * @return status code 200 if JSON body correct and request carried out, 404 otherwise.
  */
 router.post("/move", function(req, res) {
   utils.dateLog("POST request! /move");
@@ -224,7 +224,7 @@ router.post("/move", function(req, res) {
  * @param JSON body optionally can contain "distance", this states how far the move should occur for.
  * @param JSON body optionally can contain "units", this states the units the "distance" has been specified in. If
  * distance specified but no units it will assume "cm" or "degrees" as applicable. This may be mm, cm, m or degrees.
- * @return status code 200 if JSON body correct and request carried out, 500 otherwise.
+ * @return status code 200 if JSON body correct and request carried out, 404 otherwise.
  */
 router.post("/rotateToTarget", function(req, res) {
   utils.dateLog("POST request! /rotate");
@@ -256,7 +256,7 @@ router.post("/rotateToTarget", function(req, res) {
  * @param JSON objects for each robot in the scene, key of object will be robot name.
  * @param each object will contain a "location", containing an "x" and "y" point for the robot.
  * @param each object will contain a "rotation" for the robot.
- * @return status code 200 if JSON body correct and request carried out, 500 otherwise.
+ * @return status code 200 if JSON body correct and request carried out, 404 otherwise.
  */
 router.post("/devices/locationData", function(req, res) {
   /* this route will be called a lot so there shouldn't be any logging throughout it as it isn't of use */
@@ -277,7 +277,7 @@ router.post("/devices/locationData", function(req, res) {
  * motor and reduce the drift. This will contain a "left" and "right" option in a JSON object for each motor.
  * @param optionally can contain "friction" this defines a friction delta for the environment.
  * @param optionally can contain "direction" defining the direction each motor rotates in when the robot moves forward.
- * @return status code 200 if JSON body correct and request carried out, 500 otherwise.
+ * @return status code 200 if JSON body correct and request carried out, 404 otherwise.
  */
 router.post("/calibrate", function(req, res) {
   utils.dateLog("POST Request! /calibrate");
@@ -310,7 +310,7 @@ router.post("/calibrate", function(req, res) {
 /**
  * Resets the robot if it has failed.
  * @param expects the header or post body to contain a "deviceName" for the device to get data from.
- * @return status code 200 if JSON body correct and request carried out, 500 otherwise.
+ * @return status code 200 if JSON body correct and request carried out, 404 otherwise.
  */
 router.post("/reset", function(req, res) {
   utils.dateLog("POST Request! /reset");
@@ -334,7 +334,7 @@ router.post("/reset", function(req, res) {
  * @param expects the header or post body to contain a "deviceName" for the device to get data from.
  * @param expects the body to contain a "coordinates" populated with an "x" and "y" parameter for where the robot
  *        should move in 2D space.
- * @return status code 200 if JSON body correct and request carried out, 500 otherwise.
+ * @return status code 200 if JSON body correct and request carried out, 404 otherwise.
  */
 router.post("/moveToTarget", function(req, res) {
   utils.dateLog("POST Request! /moveToTarget");
