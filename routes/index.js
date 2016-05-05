@@ -173,6 +173,16 @@ router.get("/isUsingLocal", function(req, res) {
   }
 });
 
+router.get("/hazards", function(req, res) {
+  utils.dateLog("GET access! /hazards");
+  var socket = require("../websocket.js");
+
+  serializer.startJson();
+  var hazardData = storage.getHazardData();
+  serializer.addJsonBlock(serializer.genKeyPairs(null, hazardData), socket.WebSocketUpdateEnum.HAZARD);
+  serializer.endJson(res);
+});
+
 /*****************
  * POST REQUESTS *
  *****************/

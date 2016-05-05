@@ -111,7 +111,7 @@ module.exports = {
   },
 
   genKeyPairs: function(key, values) {
-    if (!values instanceof Array) {
+    if (!(values instanceof Array)) {
       return null;
     }
     var array = [];
