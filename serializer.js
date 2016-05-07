@@ -111,11 +111,8 @@ module.exports = {
   },
 
   genKeyPairs: function(key, values) {
-    if (!(values instanceof Array)) {
-      return null;
-    }
     var array = [];
-    if (key != null) {
+    if (key != null && (values instanceof Array)) {
       for (var i = 0; i < values.length; i++) {
         array.push(module.exports.genKeyPair(key, values[i]));
       }

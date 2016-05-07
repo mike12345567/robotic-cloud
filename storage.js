@@ -6,15 +6,15 @@ setTimeout(function() {
   locationData = require("./location.js");
 }, 100);
 
-var distanceMap = [];
-var eventMap = [];
 var latestEventType;
-var calibrationMap = [];
-var gyroReadingsMap = [];
-var deadRobotsMap = [];
-var localIPsMap = [];
 
-var currentHazards = [];
+var distanceMap     = [];
+var eventMap        = [];
+var calibrationMap  = [];
+var gyroReadingsMap = [];
+var deadRobotsMap   = [];
+var localIPsMap     = [];
+var currentHazards  = [];
 
 module.exports = {
   UltrasonicPosEnum: {
@@ -258,7 +258,7 @@ function getAllDataFromMap(deviceName, map) {
   var array = [];
 
   for (var key in map[deviceName]) {
-    initArray(array, key);
+    initMap(array, key);
     for (var j = 0; j < map[deviceName][key].length; j++) {
       array[key][j] = map[deviceName][key][j];
     }
@@ -275,15 +275,15 @@ function getAllKeyDataFromMap(deviceName, key, map) {
   }
 }
 
-function initArray(array, key) {
+function initMap(array, key) {
   if (array[key] == null || array[key] == undefined) {
     array[key] = [];
   }
 }
 
 function addToMap(deviceName, map, key, value) {
-  initArray(map, deviceName);
-  initArray(map[deviceName], key);
+  initMap(map, deviceName);
+  initMap(map[deviceName], key);
 
   var obj = {value : value, timestamp : util.getDateNow(), rawTimestamp : new Date().getTime()};
   map[deviceName][key].push(obj);
@@ -291,8 +291,8 @@ function addToMap(deviceName, map, key, value) {
 
 // only one value, no need for timestamps
 function overwriteToMap(deviceName, map, key, value) {
-  initArray(map, deviceName);
-  initArray(map[deviceName], key);
+  initMap(map, deviceName);
+  initMap(map[deviceName], key);
 
   var obj = {value : value};
   map[deviceName][key] = [];
