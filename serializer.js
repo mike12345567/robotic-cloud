@@ -42,7 +42,7 @@ module.exports = {
   },
 
   addJsonBlock: function(block, type) {
-    if (block == null || !block instanceof Array || !"type" in block) {
+    if (block == null || !"type" in block) {
       return;
     }
     var oneTypeSpecified = (type != null);
