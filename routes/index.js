@@ -27,6 +27,12 @@ router.get("/devices", function(req, res) {
   }
 });
 
+/**
+ * Returns a status for the robot as to whether it is currently in a failed state.
+ * @param expects the header or get body to contain a "deviceName" for the device to get data from.
+ * @return a JSON object containing a "health" property which will contain an "alive" property, this may be true or false.
+ *
+ */
 router.get("/isdead", function(req, res) {
   utils.dateLog("GET access! /isdead");
   var deviceName = getDeviceName(req);
@@ -49,13 +55,19 @@ router.get("/isdead", function(req, res) {
  * Gets all historical distance updates for a robot (its front facing Ultrasonic sensor)
  * @param expects the header or get body to contain a "deviceName" for the device to get data from.
  * @return JSON Object with a "type" option, this states which ultrasonic sensor data is received from.
- * There will also be an "attributes" array which contains JSON objects each with a value and timestamp. The values
- * are represented as CM in this case.
+ *         There will also be an "attributes" array which contains JSON objects each with a value and timestamp. The
+ *         values are represented as CM in this case.
  */
 router.get("/distances", function(req, res) {
   getAllSpecificData("distances", req, res, "getAllDistances");
 });
 
+/**
+ * Gets the current event for robot that goes by the name passed as a parameter
+ * @param expects the header or get body to contain a "deviceName" for the device to get data from.
+ * @return JSON object with a property for each ultrasonic sensor (if only one on the robot then this will be "posFront")
+ *         containing "value", "timestamp" and "rawTimestamp" properties.
+ */
 router.get("/currentDistance", function(req, res) {
   getAllSpecificData("currentDistance", req, res, "getLatestDistance");
 });
@@ -64,13 +76,19 @@ router.get("/currentDistance", function(req, res) {
  * Gets all historical gyroscope updates for a robot accel and gyro (xyz)
  * @param expects the header or get body to contain a "deviceName" for the device to get data from.
  * @return JSON Object with a "type" option, this states which accel/gyro reading this is
- * There will also be an "attributes" array which contains JSON objects each with a value and timestamp. The values
- * are represented as CM in this case.
+ *         There will also be an "attributes" array which contains JSON objects each with a value and timestamp. The
+ *         values are represented as CM in this case.
  */
 router.get("/gyroReadings", function(req, res) {
   getAllSpecificData("gyroReadings", req, res, "getAllGyroReadings");
 });
 
+/**
+ * Gets the current gyro reading for robot that goes by the name passed as a parameter
+ * @param expects the header or get body to contain a "deviceName" for the device to get data from.
+ * @return JSON object with a property for each of the gyro elements ("gyroAX", "gyroAY", "gyroAZ", "gyroGX", "gyroGY"
+ *         and "gyroGZ") with each containing a "value", "timestamp" and "rawTimestamp" property.
+ */
 router.get("/currentGyroReading", function(req, res) {
   getAllSpecificData("currentGyroReading", req, res, "getLatestGyroReading");
 });
@@ -79,13 +97,18 @@ router.get("/currentGyroReading", function(req, res) {
  * Gets all events which have been received for a robot.
  * @param expects the header or get body to contain a "deviceName" for the device to get data from.
  * @return JSON array containing the type of events which have occurred for the robot, a "type" attribute will be
- * supplied with each object in the Array, which is followed by an array of "attributes", this contains JSON objects
- * which specific event data under "value" and the timestamp under "timestamp" of when it occurred.
+ *         supplied with each object in the Array, which is followed by an array of "attributes", this contains JSON
+ *         objects which specific event data under "value" and the timestamp under "timestamp" of when it occurred.
  */
 router.get("/events", function(req, res) {
   getAllSpecificData("events", req, res, "getAllEvents");
 });
 
+/**
+ * Gets the current event for robot that goes by the name passed as a parameter
+ * @param expects the header or get body to contain a "deviceName" for the device to get data from.
+ * @return JSON object with a property of the event name, containing "value", "timestamp" and "rawTimestamp" properties.
+ */
 router.get("/currentEvent", function(req, res) {
   getAllSpecificData("currentEvent", req, res, "getLatestEvent");
 });
@@ -94,7 +117,7 @@ router.get("/currentEvent", function(req, res) {
  * Gets the calibration values which are known for a robot.
  * @param expects the header or get body to contain a "deviceName" for the device to get data from.
  * @return JSON array containing JSON objects each with a "type" attribute which specifies the type of calibration,
- * followed by an "attributes" object which in turn contains a value for the calibration under "value".
+ *         followed by an "attributes" object which in turn contains a value for the calibration under "value".
  */
 router.get("/calibrationValues", function(req, res) {
   getAllSpecificData("calibrationValues", req, res, "getAllCalibration");
@@ -105,8 +128,8 @@ router.get("/calibrationValues", function(req, res) {
  * running.
  * @param expects the header or get body to contain a "deviceName" for the device to get data from.
  * @return JSON object which contains the "type" which will be statically noted as "location", a JSON array "attributes"
- * which contains JSON objects each with a "coordinates" object containing "x" and "y" values (these are arbitrary to
- * the scene), "rotation" value in degrees and a "timestamp".
+ *         which contains JSON objects each with a "coordinates" object containing "x" and "y" values (these are
+ *         arbitrary to the scene), "rotation" value in degrees and a "timestamp".
  */
 router.get("/locationList", function(req, res) {
   getAllSpecificData("locationList", req, res, "getAllLocationData");
@@ -115,18 +138,30 @@ router.get("/locationList", function(req, res) {
 /**
  * Gets the current location of the robot that goes by the name passed in the header or get body
  * @param expects the header or get body to contain a "deviceName" for the device to get data from.
- * @return JSON object which contains the "type" which will be statically noted as "location", a JSON array "attributes"
- * which contains JSON objects each with a "coordinates" object containing "x" and "y" values (these are arbitrary to
- * the scene), "rotation" value in degrees and a "timestamp".
+ * @return a JSON object containing a property "location" containing "x" and "y" values (these are arbitrary to
+ *         the scene).
  */
 router.get("/currentLocation", function(req, res) {
   getLocationOrRotationData("currentLocation", req, res, "getLatestLocation", "location");
 });
 
+/**
+ * Gets the current rotation of the robot that goes by the name passed in the header or get body
+ * @param expects the header or get body to contain a "deviceName" for the device to get data from.
+ * @return JSON object which contains a "rotation" property, simply the latest rotation value for the device.
+ */
 router.get("/currentRotation", function(req, res) {
   getLocationOrRotationData("currentRotation", req, res, "getLatestRotation", "rotation");
 });
 
+/**
+ * Gets all current values for the robot defined in the URL
+ * @param expects the URL to contain a valid name for a robot e.g. "/device/tesbot-one".
+ * @return a JSON object containing all latest data for a robot, the properties of this object will be the same as that
+ *         returned by the "currentRotation", "currentLocation", "currentEvent", "currentGyroReading" and
+ *         "currentDistance" endpoints. This may also return an "error" property with a "status" offline if the robot
+ *         requested is not currently available.
+ */
 router.get("/device/*", function(req, res) {
   var elements = req.url.split("/");
   var deviceName = elements[elements.length-1];
@@ -160,6 +195,13 @@ router.get("/device/*", function(req, res) {
   }
 });
 
+/**
+ * Requests the cloud application to respond with whether the defined robot is currently having commands transmitted
+ * through the Particle Cloud or over the loca area network.
+ * @param expects the header or get body to contain a "deviceName" for the device to get data from.
+ * @return a JSON object a static "type" property of "isLocal, as well as a "value" containing a boolean, if true then
+ *         commands are being sent to the robot over the local area network.
+ */
 router.get("/isUsingLocal", function(req, res) {
   utils.dateLog("GET access! /isUsingLocal");
   var deviceName = getDeviceName(req);
@@ -173,6 +215,12 @@ router.get("/isUsingLocal", function(req, res) {
   }
 });
 
+/**
+ * Gets an array off all current hazards within the view of the computer vision system.
+ * @return a JSON array under the property "hazards", each element will consist of a "location" property with "x", "y",
+ *         "width" and "height" elements. A "type" will also be attached denoting the name which has been allocated to
+ *         the hazard (may be used later).
+ */
 router.get("/hazards", function(req, res) {
   utils.dateLog("GET access! /hazards");
   var socket = require("../websocket.js");
@@ -369,19 +417,41 @@ router.post("/moveToTarget", function(req, res) {
   res.end();
 });
 
+/**
+ * turns the main LED off for a robot
+ * @param expects the header or post body to contain a "deviceName" for the device on which the LED will be turned off.
+ * @return status code 200 if JSON body correct and request carried out, 404 otherwise.
+ */
 router.post("/ledOff", function(req, res) {
   changeLed(req, res, true);
 });
 
+/**
+ * turns the main LED ON for a robot
+ * @param expects the header or post body to contain a "deviceName" for the device on which the LED will be turned on.
+ * @return status code 200 if JSON body correct and request carried out, 404 otherwise.
+ */
 router.post("/ledOn", function(req, res) {
   changeLed(req, res, false);
 });
 
+/**
+ * Tells the cloud application to transmit commands to the robot through the Particle Cloud
+ * @param expects the header or post body to contain a "deviceName" for the device which should now use the Particle
+ *        Cloud for command communications.
+ * @return status code 200 if JSON body correct and request carried out, 404 otherwise.
+ */
 router.post("/useWeb", function(req, res) {
   utils.dateLog("POST Request! /useWeb");
   useLocal(req, res, false);
 });
 
+/**
+ * Tells the cloud application to transmit commands to the robot through CoAP packets over the local area network
+ * @param expects the header or post body to contain a "deviceName" for the device which should now use CoAP packets
+ *        over the local area network for command communications.
+ * @return status code 200 if JSON body correct and request carried out, 404 otherwise.
+ */
 router.post("/useLocal", function(req, res) {
   utils.dateLog("POST Request! /useLocal");
   useLocal(req, res, true);
