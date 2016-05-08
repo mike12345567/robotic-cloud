@@ -112,17 +112,20 @@ function attachHandlers() {
     if (JoystickEnum.hasOwnProperty(joyEnumStr)) {
       var button = JoystickEnum[joyEnumStr];
       var selector = $("#" + button.btnName);
-      selector.mousedown(function () {
-        var name = event.target.id;
-        makeMove(getCmd(name));
-        waitForLift = true;
-      });
-      selector.mouseup(function () {
+      selector.mousedown(onPress);
+      selector.bind("touchend", onLeave);
+      selector.mouseup(onLeave);
+      function onLeave() {
         if (waitForLift) {
           makeMove("stop");
           waitForLift = false;
         }
-      });
+      }
+      function onPress() {
+        var name = event.target.id;
+        makeMove(getCmd(name));
+        waitForLift = true;
+      }
     } else {
       throw "JoystickEnum is not Init'd correctly";
     }

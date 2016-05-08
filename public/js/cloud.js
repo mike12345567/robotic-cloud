@@ -1,5 +1,6 @@
 var urlPrefix = "api/v1/";
 var baseURL = window.location.href;
+var websocketURL;
 
 function configureURL() {
   if (baseURL.substr(baseURL.length - 1) != "/") {
@@ -7,6 +8,7 @@ function configureURL() {
   } else {
     baseURL = baseURL + urlPrefix;
   }
+  websocketURL = "ws:"+ window.location.href.split(":")[1] + ":4201";
 }
 
 function getFromCloud(url, callback, noDeviceName) {

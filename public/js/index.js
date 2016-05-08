@@ -145,7 +145,7 @@ function openWebSocket() {
 
   window.WebSocket = window.WebSocket || window.MozWebSocket;
 
-  connection = new WebSocket('ws://localhost:4201');
+  connection = new WebSocket(websocketURL);
 
   connection.onopen = function () {
     sendDeviceName();
