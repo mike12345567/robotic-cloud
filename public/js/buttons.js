@@ -23,6 +23,42 @@ JoystickEnum = {
 };
 
 function attachHandlers() {
+  $(document).keydown(function(e) {
+    switch (e.which) {
+      case 37: // left
+        makeMove("turnLeft");
+        $("#" + JoystickEnum.JOY_LEFT.btnName).css("background-color", "#c9302c");
+        break;
+
+      case 38: // up
+        makeMove("forward");
+        $("#" + JoystickEnum.JOY_FWD.btnName).css("background-color", "#c9302c");
+        break;
+
+      case 39: // right
+        makeMove("turnRight");
+        $("#" + JoystickEnum.JOY_RIGHT.btnName).css("background-color", "#c9302c");
+        break;
+
+      case 40: // down
+        makeMove("backward");
+        $("#" + JoystickEnum.JOY_BACK.btnName).css("background-color", "#c9302c");
+        break;
+    }
+  });
+
+  $(document).keyup(function(e) {
+    if (e.which == 37 || e.which == 38 || e.which == 39 || e.which == 40) {
+      makeMove("stop");
+      for (var property in JoystickEnum) {
+        if (JoystickEnum.hasOwnProperty(property)) {
+          var name = JoystickEnum[property].btnName;
+          $("#" + name).css("background-color", "#286090");
+        }
+      }
+    }
+  });
+
   for (var btnEnumStr in ButtonEnum) {
     var buttonOpt = ButtonEnum[btnEnumStr];
     (function (buttonOpt) {
