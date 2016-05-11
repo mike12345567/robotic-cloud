@@ -26,7 +26,7 @@ Object.keys(ifaces).forEach(function (ifname) {
     }
 
     // 00:50:56 and 0a:00:27 are virtual mac addresses assigned by VMWare and VirtualBox respectively
-    if (iface.mac.indexOf("00:50:56") == -1 && iface.mac.indexOf("0a:00:27") == -1) {
+    if (iface.mac != null && iface.mac.indexOf("00:50:56") == -1 && iface.mac.indexOf("0a:00:27") == -1) {
       if (mcastServer != null) {
         throw "CONFLICTING LOCAL IP ADDRESSES!";
       } else {
