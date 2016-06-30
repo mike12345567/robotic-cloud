@@ -1,4 +1,4 @@
-var accessToken = "d451f895e6d72efc774b82b6de71bed6ba43522c";
+var accessToken = "";
 var functionName = "command";
 
 var storage = require("./storage.js");
